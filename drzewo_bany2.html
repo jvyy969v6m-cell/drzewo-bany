@@ -1,0 +1,753 @@
+<title>Drzewo Bany</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Układ: nagłówek + jeden widok + dolna nawigacja; szczegóły osoby w arkuszu wysuwanym od dołu.
+   Kolor linii rodu niesie informację (Bany / Sabat / Grabowscy i Janiccy / Bartnik / inne), reszta jest chłodna i spokojna. */
+:root{
+  --bg:#F2F5F3; --surface:#FFFFFF; --surface2:#E7EDE9; --fg:#15211C; --muted:#5A6A62; --line:#D3DCD6;
+  --accent:#2C6B4D; --accent-fg:#FFFFFF; --warn:#8A5200; --warn-bg:#FAEFD6; --bad:#A3362B; --bad-bg:#F9E3E0; --ok:#2C6B4D;
+  --l-bany:#2C6B4D; --l-sabat:#3A6A9C; --l-grab:#A5522D; --l-bartnik:#A07C12; --l-inne:#76827C;
+  --f-body:'Instrument Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  --nav-h:58px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F1613; --surface:#17211C; --surface2:#202D27; --fg:#E6EEE9; --muted:#93A59B; --line:#2B3A33;
+  --accent:#6FC49A; --accent-fg:#0F1613; --warn:#E6B65E; --warn-bg:#33280F; --bad:#F29084; --bad-bg:#3A1C18; --ok:#6FC49A;
+  --l-bany:#6FC49A; --l-sabat:#80AFDD; --l-grab:#E3916A; --l-bartnik:#D9B74F; --l-inne:#98A59E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1613; --surface:#17211C; --surface2:#202D27; --fg:#E6EEE9; --muted:#93A59B; --line:#2B3A33;
+  --accent:#6FC49A; --accent-fg:#0F1613; --warn:#E6B65E; --warn-bg:#33280F; --bad:#F29084; --bad-bg:#3A1C18; --ok:#6FC49A;
+  --l-bany:#6FC49A; --l-sabat:#80AFDD; --l-grab:#E3916A; --l-bartnik:#D9B74F; --l-inne:#98A59E; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.mono{font-family:var(--f-mono);font-size:.82em;letter-spacing:.01em}
+#app{max-width:980px;margin:0 auto;min-height:100%;padding-bottom:calc(var(--nav-h) + 28px)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding:12px 0 8px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line)}
+.top h1{font-size:19px;font-weight:700;margin:0;letter-spacing:-.01em;flex:1;min-width:0}
+.top h1 small{display:block;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;font-weight:600;font-size:14px;min-height:40px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.bad{color:var(--bad);border-color:var(--bad)}
+.btn.sm{padding:5px 10px;min-height:32px;font-size:13px}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.view{padding-top:12px}
+.banner{border-radius:10px;padding:10px 12px;font-size:13.5px;margin:0 0 12px;background:var(--warn-bg);color:var(--warn)}
+.banner.bad{background:var(--bad-bg);color:var(--bad)}
+.banner.ok{background:var(--surface2);color:var(--muted)}
+.search{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;font-size:16px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:4px 11px;font-size:13px;font-weight:500;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--lc,var(--l-inne));flex:none}
+.tr.dim{opacity:.38}
+.scard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;display:flex;flex-direction:column;gap:10px}
+.scard .ttl{display:flex;align-items:center;gap:8px;font-weight:700}
+label.f input[type=color]{padding:3px;height:42px;cursor:pointer}
+.chk{display:flex;align-items:center;gap:10px;padding:11px 12px;min-height:48px;font-weight:500}
+.chk input{width:22px;height:22px;accent-color:var(--accent);flex:none}
+.list{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.list>li{border-top:1px solid var(--line)} .list>li:first-child{border-top:0}
+.row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;padding:11px 12px;min-height:52px}
+.row .nm{font-weight:600} .row .sub{color:var(--muted);font-size:13px}
+.row .main{flex:1;min-width:0} .row .main>*{overflow-wrap:anywhere}
+.pill{font-size:11.5px;font-weight:600;border-radius:99px;padding:2px 8px;background:var(--surface2);color:var(--muted);white-space:nowrap}
+.pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.bad{background:var(--bad-bg);color:var(--bad)} .pill.ok{background:var(--surface2);color:var(--ok)}
+/* drzewo */
+.tr{display:flex;align-items:stretch;border-top:1px solid var(--line);background:var(--surface)}
+.tr:first-child{border-top:0}
+.tr .gd{display:flex;flex:none;padding-left:8px}
+.gd i{width:16px;position:relative;flex:none}
+.gd i.v::before,.gd i.t::before,.gd i.l::before{content:"";position:absolute;left:7px;top:0;bottom:0;border-left:1.5px solid var(--line)}
+.gd i.l::before{bottom:auto;height:24px;border-bottom:1.5px solid var(--line);border-bottom-left-radius:6px;width:9px}
+.gd i.t::after{content:"";position:absolute;left:7px;top:24px;width:9px;border-top:1.5px solid var(--line)}
+.tr .row{padding-left:12px}.tr .gd+.row{padding-left:4px}
+.tr .tg{flex:none;width:34px;border:0;background:none;color:var(--muted);font-size:12px}
+.tr .sp{color:var(--muted);font-size:13px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:2px 0 12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+/* graf */
+.gen{margin:18px 0 8px;display:flex;align-items:baseline;gap:10px}
+.gen h2{margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.gen span{color:var(--muted);font-size:13px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.pc{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 11px 10px;display:flex;flex-direction:column;gap:3px;min-width:0;border-top:3px solid var(--lc,var(--l-inne))}
+.pc .nm{font-weight:600;overflow-wrap:anywhere} .pc .yr{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.pc .rl{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+/* nawigacja */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;
+  padding:0 max(0px,env(safe-area-inset-left,0px)) env(safe-area-inset-bottom,0px) max(0px,env(safe-area-inset-right,0px))}
+nav .in{display:flex;width:100%;max-width:640px}
+nav button{flex:1;border:0;background:none;height:var(--nav-h);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11.5px;font-weight:600;color:var(--muted);position:relative}
+nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+nav button[aria-current="page"]{color:var(--accent)}
+nav .bd{position:absolute;top:7px;left:calc(50% + 8px);min-width:16px;height:16px;border-radius:8px;background:var(--bad);color:#fff;font-size:10px;display:grid;place-items:center;padding:0 4px}
+/* arkusz */
+.shw{position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.shw .bg{position:absolute;inset:0;background:rgba(5,12,9,.5)}
+.sh{position:relative;background:var(--bg);width:100%;max-width:620px;max-height:calc(100% - env(safe-area-inset-top,0px) - 10px);display:flex;flex-direction:column;border-radius:16px 16px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.25)}
+@media(min-width:700px){.shw{align-items:center}.sh{border-radius:16px;max-height:88%}}
+.sh header{display:flex;align-items:center;gap:8px;padding:12px max(16px,env(safe-area-inset-left,0px)) 10px;border-bottom:1px solid var(--line)}
+.sh header h2{margin:0;font-size:17px;flex:1;min-width:0;overflow-wrap:anywhere}
+.sh .bd{overflow:auto;padding:14px max(16px,env(safe-area-inset-left,0px));overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.sh footer{display:flex;gap:8px;flex-wrap:wrap;padding:10px max(16px,env(safe-area-inset-left,0px)) calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--bg)}
+.sh footer .btn{flex:1 1 auto}
+.kv{display:grid;grid-template-columns:minmax(96px,34%) 1fr;gap:6px 12px;margin:0 0 14px}
+.kv dt{color:var(--muted);font-size:13px} .kv dd{margin:0;overflow-wrap:anywhere}
+.sec{margin:16px 0 6px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.rel{display:flex;flex-wrap:wrap;gap:6px}
+.rel button{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:6px 10px;font-size:14px;text-align:left}
+/* formularze */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px 10px}
+.fg .full{grid-column:1/-1}
+@media(max-width:420px){.fg{grid-template-columns:1fr}}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:600;min-width:0}
+label.f input,label.f select,label.f textarea{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:9px 10px;font-size:16px;font-weight:400;color:var(--fg);width:100%;min-width:0}
+label.f textarea{min-height:84px;resize:vertical}
+label.f small{font-weight:400;font-size:12px}
+.warnbox{border-radius:9px;padding:8px 10px;background:var(--warn-bg);color:var(--warn);font-size:13px;margin-top:10px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 14px);background:var(--fg);color:var(--bg);border-radius:10px;padding:9px 14px;font-size:14px;z-index:60;max-width:calc(100% - 32px)}
+.menu .row .arrow{color:var(--muted)}
+textarea.raw{width:100%;min-height:120px;font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:8px}
+p{margin:0 0 10px} .muted{color:var(--muted)}
+h3{font-size:15px;margin:18px 0 8px}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+@media(prefers-reduced-motion:no-preference){.sh{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
+</style>
+
+<div id="app"></div>
+<nav aria-label="Widoki"><div class="in" id="nav"></div></nav>
+<div id="layer"></div>
+<div id="toast" class="toast" hidden role="status"></div>
+
+<script>
+const SEED = {"osoby": [{"id": "P001", "imie": "Antoni", "nazwisko": "Bany", "panienskie": "", "plec": "M", "pokolenie": 1, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "", "matka": "", "malzonek": "P002", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "Hipoteza do sprawdzenia: syn Wojciecha Bany (zm. 14.02.1910, Podosie) - patrz arkusz Hipotezy", "kolejnosc": 1}, {"id": "P002", "imie": "Paulina", "nazwisko": "Bany", "panienskie": "?", "plec": "K", "pokolenie": 1, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "", "matka": "", "malzonek": "P001", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "Nazwisko panieńskie nieznane", "kolejnosc": 2}, {"id": "P003", "imie": "Stanisław", "nazwisko": "Sabat", "panienskie": "", "plec": "M", "pokolenie": 1, "dataUr": "", "rokUr": 1887, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "", "matka": "", "malzonek": "P004", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 3}, {"id": "P004", "imie": "Marianna", "nazwisko": "Sabat", "panienskie": "?", "plec": "K", "pokolenie": 1, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "", "matka": "", "malzonek": "P003", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "Nazwisko panieńskie nieznane", "kolejnosc": 4}, {"id": "P005", "imie": "Feliks", "nazwisko": "Grabowski", "panienskie": "", "plec": "M", "pokolenie": 1, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "", "matka": "", "malzonek": "P006", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 5}, {"id": "P006", "imie": "Elżbieta", "nazwisko": "Grabowska", "panienskie": "?", "plec": "K", "pokolenie": 1, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "", "matka": "", "malzonek": "P005", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "Nazwisko panieńskie nieznane", "kolejnosc": 6}, {"id": "P007", "imie": "Maciej", "nazwisko": "Janicki", "panienskie": "", "plec": "M", "pokolenie": 1, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "", "matka": "", "malzonek": "P008", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 7}, {"id": "P008", "imie": "Ludwika", "nazwisko": "Janicka", "panienskie": "?", "plec": "K", "pokolenie": 1, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "", "matka": "", "malzonek": "P007", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "Nazwisko panieńskie nieznane", "kolejnosc": 8}, {"id": "P009", "imie": "Jan", "nazwisko": "Bany", "panienskie": "", "plec": "M", "pokolenie": 2, "dataUr": "10.07.1910", "rokUr": 1910, "miejsceUr": "", "parafiaUr": "", "dataZg": "25.02.1978", "rokZg": 1978, "miejsceZg": "", "ojciec": "P001", "matka": "P002", "malzonek": "P010", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "Miejsce urodzenia nieznane - cel: akt urodzenia 1910 (parafia do ustalenia)", "kolejnosc": 1}, {"id": "P010", "imie": "Agnieszka", "nazwisko": "Bany", "panienskie": "Sabat", "plec": "K", "pokolenie": 2, "dataUr": "", "rokUr": 1911, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": 2004, "miejsceZg": "", "ojciec": "P003", "matka": "P004", "malzonek": "P009", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 2}, {"id": "P011", "imie": "Feliks", "nazwisko": "Grabowski", "panienskie": "", "plec": "M", "pokolenie": 2, "dataUr": "", "rokUr": 1903, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": 1985, "miejsceZg": "", "ojciec": "P005", "matka": "P006", "malzonek": "P012", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 3}, {"id": "P012", "imie": "Franciszka", "nazwisko": "Grabowska", "panienskie": "Janicka", "plec": "K", "pokolenie": 2, "dataUr": "", "rokUr": 1903, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": 1979, "miejsceZg": "", "ojciec": "P007", "matka": "P008", "malzonek": "P011", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 4}, {"id": "P013", "imie": "Janusz", "nazwisko": "Bany", "panienskie": "", "plec": "M", "pokolenie": 3, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": 2019, "miejsceZg": "", "ojciec": "P009", "matka": "P010", "malzonek": "P014", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "Rok urodzenia nieznany", "kolejnosc": 1}, {"id": "P014", "imie": "Irena", "nazwisko": "Bany", "panienskie": "Grabowska", "plec": "K", "pokolenie": 3, "dataUr": "", "rokUr": 1948, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": 2018, "miejsceZg": "", "ojciec": "P011", "matka": "P012", "malzonek": "P013", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 2}, {"id": "P015", "imie": "Roman", "nazwisko": "Grabowski", "panienskie": "", "plec": "M", "pokolenie": 3, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P011", "matka": "P012", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "Rodzeństwo Ireny (z rysunku)", "kolejnosc": 3}, {"id": "P016", "imie": "Regina", "nazwisko": "Grabowska", "panienskie": "Grabowska", "plec": "K", "pokolenie": 3, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P011", "matka": "P012", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "Rodzeństwo Ireny (z rysunku); nazwisko po mężu nieznane", "kolejnosc": 4}, {"id": "P017", "imie": "Teresa", "nazwisko": "Grabowska", "panienskie": "Grabowska", "plec": "K", "pokolenie": 3, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P011", "matka": "P012", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "Rodzeństwo Ireny (z rysunku); pisownia imienia z rysunku", "kolejnosc": 5}, {"id": "P018", "imie": "Apollonia", "nazwisko": "Grabowska", "panienskie": "Grabowska", "plec": "K", "pokolenie": 3, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P011", "matka": "P012", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "Rodzeństwo Ireny (z rysunku)", "kolejnosc": 6}, {"id": "P019", "imie": "Paweł", "nazwisko": "Bany", "panienskie": "", "plec": "M", "pokolenie": 4, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P013", "matka": "P014", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 1}, {"id": "P020", "imie": "Ewa", "nazwisko": "Zahorodna", "panienskie": "Bany", "plec": "K", "pokolenie": 4, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P013", "matka": "P014", "malzonek": "P028", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 2}, {"id": "P021", "imie": "Barbara", "nazwisko": "Ratajczak", "panienskie": "Bany", "plec": "K", "pokolenie": 4, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P013", "matka": "P014", "malzonek": "P043", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "Mąż nieznany", "kolejnosc": 4}, {"id": "P022", "imie": "Adam", "nazwisko": "Bany", "panienskie": "", "plec": "M", "pokolenie": 4, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P013", "matka": "P014", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 6}, {"id": "P023", "imie": "Janusz Robert", "nazwisko": "Bany", "panienskie": "", "plec": "M", "pokolenie": 4, "dataUr": "07.06.1970", "rokUr": 1970, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P013", "matka": "P014", "malzonek": "P024", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "Od dziadka Jana odróżnia rok urodzenia 1970", "kolejnosc": 7}, {"id": "P024", "imie": "Dorota Anna", "nazwisko": "Bany", "panienskie": "Bartnik", "plec": "K", "pokolenie": 4, "dataUr": "04.10.1969", "rokUr": 1969, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P025", "matka": "P026", "malzonek": "P023", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 8}, {"id": "P025", "imie": "Ryszard", "nazwisko": "Bartnik", "panienskie": "", "plec": "M", "pokolenie": 3, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "", "matka": "", "malzonek": "P026", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 7}, {"id": "P026", "imie": "Helena", "nazwisko": "Bartnik", "panienskie": "Rudnicka", "plec": "K", "pokolenie": 3, "dataUr": "", "rokUr": 1939, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "", "matka": "", "malzonek": "P025", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 8}, {"id": "P027", "imie": "Elżbieta", "nazwisko": "Bartnik", "panienskie": "Bartnik", "plec": "K", "pokolenie": 4, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P025", "matka": "P026", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "Siostra Doroty", "kolejnosc": 9}, {"id": "P028", "imie": "Paweł", "nazwisko": "Zahorodny", "panienskie": "", "plec": "M", "pokolenie": 4, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "", "matka": "", "malzonek": "P020", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 3}, {"id": "P029", "imie": "Cezary", "nazwisko": "Zahorodny", "panienskie": "", "plec": "M", "pokolenie": 5, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P028", "matka": "P020", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 1}, {"id": "P030", "imie": "Wiktor", "nazwisko": "Zahorodny", "panienskie": "", "plec": "M", "pokolenie": 5, "dataUr": "", "rokUr": 2004, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": 2004, "miejsceZg": "", "ojciec": "P028", "matka": "P020", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Nie", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 2}, {"id": "P031", "imie": "Seweryn Franciszek", "nazwisko": "Bany", "panienskie": "", "plec": "M", "pokolenie": 5, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P023", "matka": "P024", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 5}, {"id": "P032", "imie": "Adrianna", "nazwisko": "Bany", "panienskie": "Bany", "plec": "K", "pokolenie": 5, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P023", "matka": "P024", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 6}, {"id": "P033", "imie": "Marta", "nazwisko": "Woźnicka", "panienskie": "Bany", "plec": "K", "pokolenie": 5, "dataUr": "11.11.2004", "rokUr": 2004, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P023", "matka": "P024", "malzonek": "P034", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 7}, {"id": "P034", "imie": "Szymon", "nazwisko": "Woźnicki", "panienskie": "", "plec": "M", "pokolenie": 5, "dataUr": "", "rokUr": 2003, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "", "matka": "", "malzonek": "P033", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 8}, {"id": "P035", "imie": "Marek Robert", "nazwisko": "Bany", "panienskie": "", "plec": "M", "pokolenie": 5, "dataUr": "06.04.2003", "rokUr": 2003, "miejsceUr": "Pruszków", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P023", "matka": "P024", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 9}, {"id": "P036", "imie": "Daria Anna", "nazwisko": "Bany", "panienskie": "Bany", "plec": "K", "pokolenie": 5, "dataUr": "12.02.2002", "rokUr": 2002, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P023", "matka": "P024", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 10}, {"id": "P037", "imie": "Łukasz", "nazwisko": "Włodarczyk", "panienskie": "", "plec": "M", "pokolenie": 5, "dataUr": "30.11.1996", "rokUr": 1996, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "", "matka": "", "malzonek": "P038", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 11}, {"id": "P038", "imie": "Gabriela", "nazwisko": "Włodarczyk", "panienskie": "Bany", "plec": "K", "pokolenie": 5, "dataUr": "", "rokUr": 1999, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P023", "matka": "P024", "malzonek": "P037", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 12}, {"id": "P039", "imie": "Bartłomiej Janusz", "nazwisko": "Bany", "panienskie": "", "plec": "M", "pokolenie": 5, "dataUr": "", "rokUr": 1998, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P023", "matka": "P024", "malzonek": "P040", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 13}, {"id": "P040", "imie": "Wiktoria", "nazwisko": "Bany", "panienskie": "Skrzypczak", "plec": "K", "pokolenie": 5, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "", "matka": "", "malzonek": "P039", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 14}, {"id": "P041", "imie": "Michalina", "nazwisko": "Włodarczyk", "panienskie": "Włodarczyk", "plec": "K", "pokolenie": 6, "dataUr": "", "rokUr": 2026, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P037", "matka": "P038", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 1}, {"id": "P042", "imie": "Franciszek", "nazwisko": "Bany", "panienskie": "", "plec": "M", "pokolenie": 6, "dataUr": "", "rokUr": 2026, "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P039", "matka": "P040", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "Podane (niezweryfikowane)", "zrodlo": "S01, S02", "uwagi": "", "kolejnosc": 2}, {"id": "P043", "imie": "Paweł", "nazwisko": "Ratajczak", "panienskie": "", "plec": "M", "pokolenie": 4, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "", "matka": "", "malzonek": "P021", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "", "zrodlo": "", "uwagi": "", "kolejnosc": 5}, {"id": "P044", "imie": "Mateusz", "nazwisko": "Ratajczak ", "panienskie": "", "plec": "M", "pokolenie": 5, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P043", "matka": "P021", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "", "zrodlo": "", "uwagi": "", "kolejnosc": 3}, {"id": "P045", "imie": "Franciszek", "nazwisko": "Ratajczak", "panienskie": "", "plec": "M", "pokolenie": 5, "dataUr": "", "rokUr": "", "miejsceUr": "", "parafiaUr": "", "dataZg": "", "rokZg": "", "miejsceZg": "", "ojciec": "P043", "matka": "P021", "malzonek": "", "zawod": "", "zamieszkanie": "", "zyje": "Tak", "pewnosc": "", "zrodlo": "", "uwagi": "", "kolejnosc": 4}], "malzenstwa": [{"id": "M01", "maz": "P001", "zona": "P002", "data": "", "miejsce": "", "parafia": "", "akt": "", "zrodlo": "", "uwagi": "Cel: akt ślubu (parafia właściwa dla Podosia: Wilczyska - do potwierdzenia)"}, {"id": "M02", "maz": "P003", "zona": "P004", "data": "", "miejsce": "", "parafia": "", "akt": "", "zrodlo": "", "uwagi": ""}, {"id": "M03", "maz": "P005", "zona": "P006", "data": "", "miejsce": "", "parafia": "", "akt": "", "zrodlo": "", "uwagi": ""}, {"id": "M04", "maz": "P007", "zona": "P008", "data": "", "miejsce": "", "parafia": "", "akt": "", "zrodlo": "", "uwagi": ""}, {"id": "M05", "maz": "P009", "zona": "P010", "data": "", "miejsce": "", "parafia": "", "akt": "", "zrodlo": "", "uwagi": "Cel: akt ślubu Jana i Agnieszki (ok. 1930-1940) - da rodziców obojga"}, {"id": "M06", "maz": "P011", "zona": "P012", "data": "", "miejsce": "", "parafia": "", "akt": "", "zrodlo": "", "uwagi": ""}, {"id": "M07", "maz": "P013", "zona": "P014", "data": "", "miejsce": "", "parafia": "", "akt": "", "zrodlo": "", "uwagi": ""}, {"id": "M08", "maz": "P028", "zona": "P020", "data": "", "miejsce": "", "parafia": "", "akt": "", "zrodlo": "", "uwagi": ""}, {"id": "M09", "maz": "P023", "zona": "P024", "data": "", "miejsce": "", "parafia": "", "akt": "", "zrodlo": "", "uwagi": ""}, {"id": "M10", "maz": "P025", "zona": "P026", "data": "", "miejsce": "", "parafia": "", "akt": "", "zrodlo": "", "uwagi": ""}, {"id": "M11", "maz": "P034", "zona": "P033", "data": "", "miejsce": "", "parafia": "", "akt": "", "zrodlo": "", "uwagi": ""}, {"id": "M12", "maz": "P037", "zona": "P038", "data": "", "miejsce": "", "parafia": "", "akt": "", "zrodlo": "", "uwagi": ""}, {"id": "M13", "maz": "P039", "zona": "P040", "data": "", "miejsce": "", "parafia": "", "akt": "", "zrodlo": "", "uwagi": ""}, {"id": "M14", "maz": "P043", "zona": "P021", "data": "", "miejsce": "", "parafia": "", "akt": "", "zrodlo": "", "uwagi": ""}], "zrodla": [{"id": "S01", "archiwum": "Drzewo online (zrzuty ekranu)", "zespol": "", "sygnatura": "", "opis": "Zrzuty z serwisu z drzewem rodzinnym (3 zrzuty)", "daty": "", "osoby": "Antoni, Paulina, Jan i potomkowie", "wartosc": "Podane", "uwagi": "Główne źródło danych o osobach i datach; bez dokumentów", "link": "własne zrzuty"}, {"id": "S02", "archiwum": "Rysunek odręczny", "zespol": "", "sygnatura": "", "opis": "Ręcznie rysowane drzewo (zdjęcie)", "daty": "", "osoby": "jw.", "wartosc": "Podane", "uwagi": "Uzupełnia rodzeństwo Ireny i rodzeństwo Janusza", "link": "własne zdjęcie"}, {"id": "S03", "archiwum": "AP Lublin", "zespol": "168 Zbiór tabel likwidacyjnych lubelskiej i siedleckiej guberni", "sygnatura": "718", "opis": "Tabela likwidacyjna wsi Plebanka (gm. Życzyn, pow. garwoliński)", "daty": "1864-1870", "osoby": "brak", "wartosc": "Brak", "uwagi": "Dwa gospodarstwa (Nowak, Wincenty). Potwierdza tylko położenie gm. Życzyn w pow. garwolińskim", "link": "akta w skanach (AP Lublin)"}, {"id": "S04", "archiwum": "AP Siedlce", "zespol": "1728 Sąd Gminny w Miastkowie", "sygnatura": "139", "opis": "Sprawa cywilna 239/1916: Płoński przeciw Szewczakowi i in. (szkoda w zasiewach, Podosie)", "daty": "1916", "osoby": "Władysław Bany, Julian Bany, Jan Bany", "wartosc": "Średnia", "uwagi": "Potwierdza Banych w Podosiu (gm. Jarczew) w 1916 r.", "link": "skan AP Siedlce"}, {"id": "S05", "archiwum": "AP Siedlce", "zespol": "1728 Sąd Gminny w Miastkowie", "sygnatura": "131", "opis": "Sprawa 231/1916: Jan Bany s. Józefa przeciw Janowi Szewczakowi (wynagrodzenie za pracę)", "daty": "1916", "osoby": "Jan Bany syn Józefa", "wartosc": "Niska", "uwagi": "Nowa osoba: Jan s. Józefa; pokrewieństwo z Wojciechem nieustalone", "link": "skan AP Siedlce"}, {"id": "S06", "archiwum": "AP Siedlce", "zespol": "1728 Sąd Gminny w Miastkowie", "sygnatura": "128", "opis": "Sprawa 228/1916: Jan Bany s. Józefa jako opiekun Stanisława Jurkowskiego", "daty": "1916", "osoby": "Jan Bany s. Józefa", "wartosc": "Niska", "uwagi": "Umorzona. Brak Antoniego i Pauliny", "link": "skan AP Siedlce"}, {"id": "S07", "archiwum": "AP Siedlce", "zespol": "1728 Sąd Gminny w Miastkowie", "sygnatura": "257", "opis": "Sprawa 357/1916: Korcarze (Żelechów) przeciw Janowi Banemu (zwrot zaliczki)", "daty": "1916", "osoby": "Jan Bany (Podosie)", "wartosc": "Niska", "uwagi": "Bez imienia ojca; brak związku z Antonim", "link": "skan AP Siedlce"}, {"id": "S08", "archiwum": "AP Siedlce", "zespol": "1728 Sąd Gminny w Miastkowie", "sygnatura": "490", "opis": "Sprawa 62/1917: Skwarek przeciw Janowi Banemu (dług 40 rb)", "daty": "1917", "osoby": "Jan Bany (Podosie)", "wartosc": "Niska", "uwagi": "Antoni w dokumencie to Antoni Skwarek (powód), nie Bany", "link": "skan AP Siedlce"}, {"id": "S09", "archiwum": "AP Siedlce", "zespol": "1236 Sąd Gminny 1 Okręgu pow. łukowskiego", "sygnatura": "188", "opis": "Skarga Marianny Petrzak z d. Bany; spis majątku po Wojciechu Banym (Podosie, zm. 14.02.1910)", "daty": "1911", "osoby": "Wojciech, Władysław, Julian, Franciszek, Antoni, Stanisław, Anna Libera, Marianna Petrzak", "wartosc": "Wysoka", "uwagi": "Spadkobiercy: dzieci Wojciecha, w tym nieobecni synowie Antoni i Stanisław. Hipoteza: Antoni = ojciec Jana", "link": "skan AP Siedlce"}, {"id": "S10", "archiwum": "Geneteka (zrzuty ekranu)", "zespol": "", "sygnatura": "", "opis": "Wyniki dla nazwiska Bany w pow. żelechowskim/garwolińskim (zawierają m.in. małżeństwo Franciszka s. Wojciecha, Żelechów 1910 akt 22)", "daty": "1860-1915", "osoby": "Franciszek Bany (s. Wojciecha i Marianny z d. Zatyka)", "wartosc": "Średnia", "uwagi": "Trop: syn Wojciecha; wymaga otwarcia skanu aktu", "link": "geneteka.genealodzy.pl"}], "hipotezy": [{"id": "H01", "osoba": "Wojciech Bany (zm. 14.02.1910, Podosie)", "relacja": "Ojciec Antoniego Banego (P001)", "podstawa": "Spis majątku wymienia nieobecnego syna Antoniego; imię i nazwisko zgodne", "brakuje": "Akt zgonu/chrztu z imionami rodziców; potwierdzenie, że ten Antoni to mąż Pauliny", "gdzie": "Geneteka: parafia Wilczyska; AP Siedlce, księgi parafii Wilczyska", "status": "Do sprawdzenia"}, {"id": "H02", "osoba": "Franciszek Bany (żonaty z Marianną Szlejdą, Żelechów 1910, akt 22)", "relacja": "Brat Antoniego", "podstawa": "Rodzice w akcie: Wojciech i Marianna z d. Zatyka; imię zgodne z dziećmi Wojciecha", "brakuje": "Skan aktu, miejsce urodzenia Franciszka", "gdzie": "Geneteka SKAN (Żelechów 1910/22)", "status": "Do sprawdzenia"}, {"id": "H03", "osoba": "Władysław Bany (Podosie)", "relacja": "Brat Antoniego", "podstawa": "Spis majątku 1911 i sprawa 239/1916", "brakuje": "Akt chrztu z rodzicami", "gdzie": "Parafia Wilczyska", "status": "Do sprawdzenia"}, {"id": "H04", "osoba": "Julian Bany (Podosie)", "relacja": "Brat Antoniego", "podstawa": "Spis majątku 1911 i sprawa 239/1916", "brakuje": "Akt chrztu z rodzicami", "gdzie": "Parafia Wilczyska", "status": "Do sprawdzenia"}, {"id": "H05", "osoba": "Stanisław Bany", "relacja": "Brat Antoniego (w 1911 poza domem)", "podstawa": "Spis majątku 1911", "brakuje": "Miejsce pobytu, akt chrztu", "gdzie": "Parafia Wilczyska; księgi ludności", "status": "Do sprawdzenia"}, {"id": "H06", "osoba": "Anna Libera z d. Bany", "relacja": "Siostra Antoniego", "podstawa": "Spis majątku 1911 (żona Stanisława Libery)", "brakuje": "Akt chrztu", "gdzie": "Parafia Wilczyska", "status": "Do sprawdzenia"}, {"id": "H07", "osoba": "Marianna Petrzak z d. Bany", "relacja": "Siostra Antoniego", "podstawa": "Skarga z 1911 r.", "brakuje": "Akt chrztu", "gdzie": "Parafia Wilczyska", "status": "Do sprawdzenia"}, {"id": "H08", "osoba": "Marianna i Roman Wiśniak (ur. ok. 1906 i 1908)", "relacja": "Siostrzeńcy Antoniego, kuzyni Jana", "podstawa": "Wnuki Wojciecha po zmarłej córce Władysławie", "brakuje": "Akt urodzenia dzieci", "gdzie": "Parafia Wilczyska", "status": "Do sprawdzenia"}, {"id": "H09", "osoba": "Jan Bany, syn Józefa (Podosie)", "relacja": "Możliwy kuzyn lub krewny dalszy", "podstawa": "Wspólna wieś i nazwisko; imię ojca różne od Wojciecha", "brakuje": "Akty Józefa i jego rodziców", "gdzie": "Parafia Wilczyska", "status": "Do sprawdzenia"}], "zadania": [{"prio": 1, "zadanie": "Otworzyć skan aktu małżeństwa Franciszka Bany (Żelechów 1910, akt 22)", "instytucja": "Geneteka (SKAN)", "cel": "Franciszek, syn Wojciecha", "szansa": "Wysoka", "status": "Do zrobienia", "termin": "", "uwagi": ""}, {"prio": 2, "zadanie": "Przeszukać Genetekę: parafia Wilczyska, nazwisko Bany, 1860-1915", "instytucja": "Geneteka / Szukaj w Archiwach", "cel": "Wojciech, Antoni i rodzeństwo", "szansa": "Wysoka", "status": "Do zrobienia", "termin": "", "uwagi": "Parafia Podosia: Wilczyska (do potwierdzenia w katalogu zasobów)"}, {"prio": 3, "zadanie": "Znaleźć akt urodzenia Jana Bany z 1910 r. (ojciec Antoni, matka Paulina)", "instytucja": "Szukaj w Archiwach, BASIA, AP Siedlce", "cel": "Jan Bany, Antoni, Paulina", "szansa": "Średnia", "status": "Do zrobienia", "termin": "", "uwagi": "Ustalić parafię z aktu zgonu Jana"}, {"prio": 4, "zadanie": "Złożyć wniosek o odpis aktu zgonu Jana (zm. 25.02.1978)", "instytucja": "USC miejsca zgonu (Marki lub Warszawa)", "cel": "Jan Bany", "szansa": "Wysoka", "status": "Do zrobienia", "termin": "", "uwagi": "Poda miejsce urodzenia i rodziców"}, {"prio": 5, "zadanie": "Znaleźć akt ślubu Jana Bany i Agnieszki Sabat (ok. 1930-1940)", "instytucja": "Geneteka, USC", "cel": "Jan, Agnieszka", "szansa": "Średnia", "status": "Do zrobienia", "termin": "", "uwagi": ""}, {"prio": 6, "zadanie": "Sprawdzić pochówki Jana i Agnieszki oraz Ireny i Janusza", "instytucja": "Wyszukiwarka grobów ZCK Warszawa", "cel": "Jan, Agnieszka, Janusz, Irena", "szansa": "Średnia", "status": "Do zrobienia", "termin": "", "uwagi": ""}, {"prio": 7, "zadanie": "Znaleźć akty urodzenia i ślubu Feliksa Grabowskiego i Franciszki Janickiej (ur. 1903)", "instytucja": "Geneteka, FamilySearch", "cel": "Linia Grabowskich i Janickich", "szansa": "Średnia", "status": "Do zrobienia", "termin": "", "uwagi": ""}, {"prio": 8, "zadanie": "Znaleźć akt urodzenia Stanisława Sabata (1887) i ślubu z Marianną", "instytucja": "Geneteka, AP", "cel": "Linia Sabatów", "szansa": "Średnia", "status": "Do zrobienia", "termin": "", "uwagi": ""}, {"prio": 9, "zadanie": "Przejrzeć dokumenty rodzinne w domu (metryka, świadectwa, książeczka wojskowa)", "instytucja": "Dom / rodzina", "cel": "Jan Bany", "szansa": "Wysoka", "status": "Do zrobienia", "termin": "", "uwagi": "Najszybsza droga do miejsca urodzenia Jana"}, {"prio": 10, "zadanie": "Przeszukać FamilySearch i BASIA po nazwisku Bany (warianty zapisu osobno)", "instytucja": "FamilySearch, BASIA", "cel": "Wszyscy", "szansa": "Niska", "status": "Do zrobienia", "termin": "", "uwagi": "Nie łączyć osób bez dowodu"}], "instrukcja": [["Drzewo genealogiczne rodziny Bany", ""], ["Arkusz", "Do czego służy"], ["Osoby", "Rejestr osób: jedna osoba = jeden wiersz. Wpisuj do kolumn bez szarego tła; szare kolumny (imię i nazwisko, wiek, ojciec, matka, małżonek) liczą się same."], ["Małżeństwa", "Pary i dane aktów ślubu. Kolumny „Mąż\", „Żona\" i „Liczba dzieci\" uzupełniają się z arkusza Osoby."], ["Źródła", "Rejestr przejrzanych dokumentów: co w nich jest, jak cenne dla drzewa. Nadawaj ID (S11, S12...)."], ["Hipotezy", "Osoby możliwe, ale niepotwierdzone. Po sprawdzeniu zmień status na „Potwierdzona\" lub „Odrzucona\"."], ["Do zrobienia", "Lista zadań według szans na wiarygodny wynik."], ["Zasady wpisywania", ""], ["ID osoby", "P001, P002... Powiązania (ID ojca, ID matki, ID małżonka) wpisuj kodem ID, nie nazwiskiem. Nowa osoba: kolejny wolny numer."], ["Daty", "Pełna data w formacie 10.07.1910 w kolumnie „Data urodzenia / śmierci\"; sam rok w kolumnie „Rok\". Wiek w chwili śmierci liczy się z lat."], ["Nazwisko panieńskie", "Wpisuj tylko, gdy wiesz je z dokumentu. Nazwisko po mężu trzymaj w kolumnie „Nazwisko (obecne)\"."], ["Poziom pewności", "Potwierdzone dokumentem / Podane (niezweryfikowane) / Hipoteza / Odrzucone. W obecnym arkuszu wszystko z Twojego drzewa jest „Podane\"."], ["Źródło", "Wpisuj ID z arkusza Źródła (np. S09). Do aktu dodaj link lub numer skanu w arkuszu Źródła."], ["Uwagi", "Pisownie wariantowe, wątpliwości, co sprawdzić dalej. Nie łącz osób wyłącznie na podstawie zgodności imion, nazwisk lub dat."], ["", "Dane wejściowe pochodzą od Ciebie (zrzuty drzewa i rysunek) oraz z odczytów dokumentów archiwalnych; odczyty pisma odręcznego mogą zawierać błędy."], ["Graf", "Zakładka „Graf\" układa osoby z arkusza Osoby w rzędach według pokolenia (kolumna G) i sama się uzupełnia: nowa osoba pojawi się po wpisaniu ID, imienia, nazwiska i pokolenia (do 18 osób w rzędzie). Kolor wg linii rodu."], ["Kolejność na grafie", "Kolumna AJ w arkuszu Osoby. Małe liczby idą na lewo (1, 2, 3...), dzięki czemu małżonków i rodzeństwo ustawiasz obok siebie. Bez numeru osoba trafia na koniec rzędu. Kolumny AB-AI i AK są pomocnicze, nie edytuj ich."], ["Drzewo Bany", "Zakładka „Drzewo Bany\" buduje się sama z arkusza Osoby: wszyscy potomkowie osoby głównej (komórka B3, domyślnie P001) wg kolumn ID ojca i ID matki, a małżonek(ka) pojawia się w tym samym wierszu z rodzicami. Nowe dziecko wystarczy wpisać w Osoby z ID ojca lub matki z linii głównej (do 60 osób i 10 pokoleń). Kolejność rodzeństwa wynika z kolumny AJ w Osoby (potem z numeru ID). Kolumna AZ w Osoby pokazuje, czy osoba jest w drzewie."]], "korzen": "P001"};
+const KEY = 'bany.drzewo.v1', KEY_PREV = 'bany.drzewo.prev';
+let S, storageOK = true;
+const clone = o => JSON.parse(JSON.stringify(o));
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- dane ---------- */
+function normalize(st){
+  st.osoby ||= []; st.malzenstwa ||= []; st.zrodla ||= []; st.hipotezy ||= []; st.zadania ||= [];
+  st.korzen ||= (st.osoby[0] && st.osoby[0].id) || '';
+  st.meta ||= {backupAt:null, changes:0};
+  st.ustawienia = normUst(st.ustawienia);
+  return st;
+}
+const DEF_UST = () => ({
+  linie:[{id:'bany',nazwa:'Bany',kolor:'#2C6B4D',ciemny:'#6FC49A',nazwiska:['Bany']},{id:'sabat',nazwa:'Sabat',kolor:'#3A6A9C',ciemny:'#80AFDD',nazwiska:['Sabat']},
+    {id:'grab',nazwa:'Grabowscy i Janiccy',kolor:'#A5522D',ciemny:'#E3916A',nazwiska:['Grabowski','Grabowska','Janicki','Janicka']},{id:'bartnik',nazwa:'Bartnik',kolor:'#A07C12',ciemny:'#D9B74F',nazwiska:['Bartnik']}],
+  inne:{nazwa:'Inne',kolor:'#76827C',ciemny:'#98A59E'},
+  filtry:{osobyPok:true, osobyLinia:true, grafLinia:true, drzewoLinia:true}
+});
+const HEX = /^#[0-9a-f]{6}$/i;
+function normUst(u){
+  const d = DEF_UST(); u = u || {}; const seen = new Set();
+  const linie = Array.isArray(u.linie) ? u.linie.map((l, i) => {
+    let id = String(l.id || '').replace(/[^a-z0-9_]/gi, '') || 'l' + i; while (seen.has(id) || id === 'x') id += 'a'; seen.add(id);
+    const kolor = HEX.test(l.kolor) ? l.kolor : '#76827C';
+    return {id, nazwa:String(l.nazwa ?? ''), kolor, ciemny:HEX.test(l.ciemny) ? l.ciemny : kolor, nazwiska:Array.isArray(l.nazwiska) ? l.nazwiska.map(String) : []};
+  }) : d.linie;
+  const inne = Object.assign(d.inne, u.inne || {}); if (!HEX.test(inne.kolor)) inne.kolor = '#76827C'; if (!HEX.test(inne.ciemny)) inne.ciemny = inne.kolor;
+  return {linie, inne, filtry:Object.assign(d.filtry, u.filtry || {})};
+}
+function applyTheme(){
+  const U = S.ustawienia, all = [...U.linie.map(l => [l.id, l.kolor, l.ciemny]), ['x', U.inne.kolor, U.inne.ciemny]];
+  const L = all.map(([i,c]) => `--c_${i}:${c}`).join(';'), D = all.map(([i,,c]) => `--c_${i}:${c}`).join(';');
+  let el = document.getElementById('dyn'); if (!el){ el = document.createElement('style'); el.id = 'dyn'; document.head.appendChild(el); }
+  el.textContent = `:root{${L}}@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){${D}}}:root[data-theme="dark"]{${D}}` + all.map(([i]) => `.ln_${i}{--lc:var(--c_${i})}`).join('');
+}
+function load(){
+  try { const t = localStorage.getItem(KEY); if (t) S = normalize(JSON.parse(t)); } catch(e){ storageOK = false; }
+  if (!S) S = normalize(clone(SEED));
+  reindex(); syncMarriages();
+}
+function save(){
+  S.meta.changes = (S.meta.changes || 0) + 1;
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){ storageOK = false; }
+}
+let byId = {}, idx = new Map();
+function reindex(){ byId = {}; idx = new Map(); S.osoby.forEach((p,i) => { byId[p.id] = p; idx.set(p.id, i); }); }
+
+/* ---------- wyliczenia (odpowiedniki kolumn „auto” z arkusza) ---------- */
+const num = v => (v === '' || v == null || isNaN(+v)) ? null : +v;
+const idNum = p => { const n = parseInt(String(p.id).slice(1), 10); return isNaN(n) ? 999 : n; };
+const nameOf = p => p ? `${p.imie || ''} ${p.nazwisko || ''}`.trim() : '';
+const maiden = p => p.panienskie && p.panienskie !== '?' && p.panienskie !== p.nazwisko ? p.panienskie : '';
+const labelOf = p => p ? nameOf(p) + (maiden(p) ? ` (z d. ${maiden(p)})` : '') : '';
+const baseName = p => (p.panienskie && p.panienskie !== '?') ? p.panienskie : p.nazwisko;
+function lineage(p){
+  const b = String(baseName(p) || '').trim().toLowerCase();
+  for (const l of S.ustawienia.linie) if (l.nazwiska.some(n => String(n).trim().toLowerCase() === b)) return l;
+  return {id:'x', nazwa:S.ustawienia.inne.nazwa || 'Inne'};
+}
+const lcls = p => 'ln_' + lineage(p).id;
+function years(p){
+  const I = p.rokUr ?? '', M = p.rokZg ?? '';
+  if (I === '' && M === '' && p.zyje !== 'Nie') return '';
+  if (M === '' && p.zyje !== 'Nie') return 'ur. ' + I;
+  return (I === '' ? '?' : I) + ' – ' + (M === '' ? '†' : M);
+}
+const age = p => (num(p.rokUr) != null && num(p.rokZg) != null) ? num(p.rokZg) - num(p.rokUr) : null;
+const ord = (p, d) => num(p.kolejnosc) ?? d;
+const cmpTree = (a,b) => (ord(a,500) - ord(b,500)) || (idNum(a) - idNum(b));
+const cmpGraf = (a,b) => (ord(a,1000) - ord(b,1000)) || (idx.get(a.id) - idx.get(b.id));
+const childrenOf = id => S.osoby.filter(p => p.ojciec === id || p.matka === id).sort(cmpTree);
+
+function buildTree(rootId){
+  const root = byId[rootId]; const inTree = new Set(); if (!root) return {nodes:null, inTree};
+  function walk(p, depth){
+    inTree.add(p.id);
+    const node = {p, spouse: byId[p.malzonek] || null, kids: []};
+    if (depth < 12) for (const c of childrenOf(p.id)) if (!inTree.has(c.id)) node.kids.push(walk(c, depth + 1));
+    return node;
+  }
+  return {nodes: walk(root, 0), inTree};
+}
+
+/* ---------- małżeństwa (wyprowadzane z pól „małżonek” w Osoby) ---------- */
+function orient(p, q){
+  const a = p.plec, b = q.plec;
+  const husband = a === 'M' ? (b === 'M' ? p.id < q.id : true) : a === 'K' ? (b === 'K' ? p.id < q.id : false) : b === 'K' ? true : b === 'M' ? false : p.id < q.id;
+  return husband ? [p, q] : [q, p];
+}
+function pairs(){
+  const seen = new Set(), out = [];
+  for (const p of S.osoby){
+    const q = byId[p.malzonek]; if (!q || q.id === p.id) continue;
+    const key = [p.id, q.id].sort().join('|'); if (seen.has(key)) continue; seen.add(key);
+    const [m, z] = orient(p, q); out.push({key, maz: m.id, zona: z.id});
+  }
+  return out;
+}
+const nextMid = () => 'M' + String(Math.max(0, ...S.malzenstwa.map(m => parseInt(String(m.id).slice(1), 10) || 0)) + 1).padStart(2, '0');
+function syncMarriages(){
+  let changed = false;
+  for (const pr of pairs()){
+    const e = S.malzenstwa.find(m => (m.maz === pr.maz && m.zona === pr.zona) || (m.maz === pr.zona && m.zona === pr.maz));
+    if (!e){ S.malzenstwa.push({id: nextMid(), maz: pr.maz, zona: pr.zona, data:'', miejsce:'', parafia:'', akt:'', zrodlo:'', uwagi:''}); changed = true; }
+    else if (e.maz !== pr.maz){ e.maz = pr.maz; e.zona = pr.zona; changed = true; }
+  }
+  return changed;
+}
+const kids = m => S.osoby.filter(p => (p.ojciec === m.maz && p.matka === m.zona) || (p.ojciec === m.maz && !p.matka) || (!p.ojciec && p.matka === m.zona)).length;
+function mStatus(m){
+  const a = byId[m.maz], b = byId[m.zona];
+  if (!a || !b) return 'Nie ma takiej osoby w Osoby';
+  return (a.malzonek === b.id && b.malzonek === a.id) ? 'OK' : 'Niezgodne ID małżonka w Osoby';
+}
+
+/* ---------- kontrola ---------- */
+function checks(){
+  const out = [], ids = {};
+  const {inTree} = buildTree(S.korzen);
+  const rootBase = byId[S.korzen] ? baseName(byId[S.korzen]) : '';
+  for (const p of S.osoby){
+    if (ids[p.id]) out.push({sev:'bad', id:p.id, t:`${p.id}: powtórzone ID`}); ids[p.id] = 1;
+    if (p.pokolenie === '' || p.pokolenie == null) out.push({sev:'warn', id:p.id, t:`${nameOf(p)} (${p.id}): brak pokolenia, więc nie ma go w grafie w żadnym rzędzie`});
+    for (const [k, lab, g] of [['ojciec','ojciec','M'],['matka','matka','K']]){
+      const r = p[k]; if (!r) continue; const q = byId[r];
+      if (!q) out.push({sev:'bad', id:p.id, t:`${nameOf(p)}: ${lab} ${r} nie istnieje`});
+      else {
+        if (q.plec && q.plec !== g) out.push({sev:'warn', id:p.id, t:`${nameOf(p)}: ${lab} ${nameOf(q)} ma płeć ${q.plec}`});
+        if (num(q.pokolenie) != null && num(p.pokolenie) != null && num(q.pokolenie) !== num(p.pokolenie) - 1)
+          out.push({sev:'warn', id:p.id, t:`${nameOf(p)} (pok. ${p.pokolenie}) i ${lab} ${nameOf(q)} (pok. ${q.pokolenie}): różnica nie wynosi 1`});
+      }
+    }
+    if (p.malzonek){
+      const q = byId[p.malzonek];
+      if (!q) out.push({sev:'bad', id:p.id, t:`${nameOf(p)}: małżonek ${p.malzonek} nie istnieje`});
+      else if (q.malzonek !== p.id) out.push({sev:'warn', id:p.id, t:`${nameOf(p)} wskazuje małżonka ${nameOf(q)}, ale ${nameOf(q)} wskazuje ${q.malzonek || 'nikogo'}`});
+    }
+    const sIds = new Set(S.zrodla.map(z => z.id));
+    for (const s of String(p.zrodlo || '').match(/S\d+/g) || []) if (!sIds.has(s)) out.push({sev:'warn', id:p.id, t:`${nameOf(p)}: źródła ${s} nie ma w Źródłach`});
+    if (rootBase && baseName(p) === rootBase && !inTree.has(p.id) && !(byId[p.malzonek] && inTree.has(p.malzonek)))
+      out.push({sev:'bad', id:p.id, t:`${nameOf(p)}: nazwisko ${rootBase} bez powiązania z linią główną (brak rodziców w Osoby)`});
+  }
+  for (const m of S.malzenstwa){ const s = mStatus(m); if (s !== 'OK') out.push({sev:'warn', mid:m.id, t:`Małżeństwo ${m.id}: ${s}`}); }
+  return out;
+}
+
+/* ---------- widoki ---------- */
+const ICON = {
+  drzewo:'<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="19" r="2.2"/><path d="M12 7.2V12M12 12H6v4.8M12 12h6v4.8"/></svg>',
+  graf:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="10" width="8" height="4" rx="1"/><rect x="13" y="10" width="8" height="4" rx="1"/><rect x="3" y="16" width="5" height="4" rx="1"/><rect x="10" y="16" width="5" height="4" rx="1"/><rect x="17" y="16" width="4" height="4" rx="1"/></svg>',
+  osoby:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M16.5 5.2a3 3 0 0 1 0 5.6M18 14.8c1.8.7 3 2.3 3 4.7"/></svg>',
+  malz:'<svg viewBox="0 0 24 24"><circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/></svg>',
+  wiecej:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>'
+};
+const NAV = [['drzewo','Drzewo','drzewo'],['graf','Graf','graf'],['osoby','Osoby','osoby'],['malzenstwa','Małżeństwa','malz'],['wiecej','Więcej','wiecej']];
+const MORE = ['zrodla','hipotezy','zadania','kontrola','kopia','pomoc','ustawienia'];
+let view = 'drzewo';
+const ui = {q:'', pok:'', linia:'', glin:'', dlin:'', collapsed:new Set(), mq:''};
+
+function route(){
+  const h = location.hash.replace('#','');
+  view = (NAV.some(n => n[0] === h) || MORE.includes(h)) ? h : 'drzewo';
+  render();
+}
+function go(v){ if (location.hash === '#' + v) route(); else location.hash = v; }
+window.addEventListener('hashchange', route);
+
+function render(){
+  applyTheme();
+  const warns = checks().length;
+  $('#nav').innerHTML = NAV.map(([k,l,i]) => {
+    const cur = view === k || (k === 'wiecej' && MORE.includes(view));
+    return `<button data-act="go" data-v="${k}" ${cur ? 'aria-current="page"' : ''}>${ICON[i]}<span>${l}</span>${k === 'wiecej' && warns ? `<span class="bd">${warns}</span>` : ''}</button>`;
+  }).join('');
+  const fn = {drzewo:vDrzewo, graf:vGraf, osoby:vOsoby, malzenstwa:vMalz, wiecej:vWiecej, zrodla:()=>vCrud('zrodla'), hipotezy:()=>vCrud('hipotezy'), zadania:()=>vCrud('zadania'), kontrola:vKontrola, kopia:vKopia, pomoc:vPomoc, ustawienia:vUst}[view];
+  const keep = window.scrollY;
+  $('#app').innerHTML = (storageOK ? '' : '<div class="banner bad" style="margin-top:12px">Ta przeglądarka nie zapisuje danych na urządzeniu. Zmiany znikną po zamknięciu karty. Rób kopię w Więcej → Kopia zapasowa.</div>') + fn();
+  window.scrollTo(0, keep);
+}
+const hdr = (title, sub, right = '') => `<div class="top"><h1>${title}${sub ? `<small>${sub}</small>` : ''}</h1>${right}</div>`;
+const pTag = p => `<span class="dot ${lcls(p)}"></span>`;
+
+/* Drzewo */
+const dimmed = p => S.ustawienia.filtry.drzewoLinia && ui.dlin && lineage(p).id !== ui.dlin;
+function vDrzewo(){
+  const {nodes, inTree} = buildTree(S.korzen);
+  const opts = S.osoby.map(p => `<option value="${esc(p.id)}" ${p.id === S.korzen ? 'selected' : ''}>${esc(p.id)} · ${esc(nameOf(p))}</option>`).join('');
+  let n = 0, body = '';
+  function row(node, guides, last, depth){
+    n++;
+    const p = node.p, sp = node.spouse, has = node.kids.length, col = ui.collapsed.has(p.id);
+    const gd = guides.map(g => `<i class="${g ? 'v' : ''}"></i>`).join('') + (depth ? `<i class="${last ? 'l' : 't'}"></i>` : '');
+    body += `<div class="tr${dimmed(p) ? ' dim' : ''}">${depth ? `<div class="gd">${gd}</div>` : ''}
+      <button class="row" data-act="person" data-id="${esc(p.id)}">${pTag(p)}<span class="main"><span class="nm">${esc(labelOf(p))}</span> <span class="mono muted">${esc(years(p))}</span>
+      ${sp ? `<div class="sp">∞ ${esc(labelOf(sp))} <span class="mono">${esc(years(sp))}</span></div>` : ''}</span><span class="pill">pok. ${esc(p.pokolenie || '?')}</span></button>
+      ${has ? `<button class="tg" data-act="tg" data-id="${esc(p.id)}" aria-label="${col ? 'Rozwiń' : 'Zwiń'} potomków" aria-expanded="${!col}">${col ? '▸ ' + has : '▾'}</button>` : '<span class="tg"></span>'}</div>`;
+    if (has && !col) node.kids.forEach((k, i) => row(k, depth ? [...guides, !last] : [], i === node.kids.length - 1, depth + 1));
+  }
+  if (nodes) row(nodes, [], true, 0);
+  const total = inTree.size;
+  const bany = checks().filter(c => c.t.includes('bez powiązania'));
+  return hdr('Drzewo Bany', `${total} ${total === 1 ? 'osoba' : 'osób'} w linii potomków`, `<label class="f" style="min-width:0;flex:0 1 190px"><select id="root" aria-label="Osoba główna">${opts}</select></label>`) +
+    `<div class="view">${bany.length ? `<div class="banner bad">${bany.length} os. z nazwiskiem Bany poza linią główną (brak rodziców w Osoby). Szczegóły w Więcej → Kontrola.</div>` : ''}
+    ${legend()}${S.ustawienia.filtry.drzewoLinia ? lineChips('dlin', 'fdlin') + (ui.dlin ? '<p class="muted" style="font-size:13px;margin:-4px 0 10px">Osoby spoza wybranej linii są wyszarzone.</p>' : '') : ''}<div class="list" style="border-radius:12px;overflow:hidden">${body || '<p class="muted" style="padding:14px">Wybierz osobę główną.</p>'}</div></div>`;
+}
+const allLines = () => [...S.ustawienia.linie.map(l => [l.id, l.nazwa]), ['x', S.ustawienia.inne.nazwa || 'Inne']];
+const legend = () => `<div class="legend">${allLines().map(([i,n]) => `<span class="ln_${i}"><i class="dot"></i>${esc(n)}</span>`).join('')}</div>`;
+const lineChips = (key, act) => `<div class="chips" role="group" aria-label="Filtr linii">${allLines().map(([i,n]) => `<button class="chip" data-act="${act}" data-v="${i}" aria-pressed="${ui[key] === i}">${esc(n)}</button>`).join('')}</div>`;
+
+/* Graf */
+function vGraf(){
+  const groups = new Map();
+  for (const p of S.osoby){ const g = num(p.pokolenie) ?? 'brak'; (groups.get(g) || groups.set(g, []).get(g)).push(p); }
+  const keys = [...groups.keys()].sort((a,b) => a === 'brak' ? 1 : b === 'brak' ? -1 : a - b);
+  const roman = n => ['','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][n] || n;
+  const html = keys.map(k => {
+    const all = groups.get(k).sort(cmpGraf);
+    const list = (S.ustawienia.filtry.grafLinia && ui.glin) ? all.filter(p => lineage(p).id === ui.glin) : all;
+    if (!list.length) return '';
+    return `<div class="gen"><h2>${k === 'brak' ? 'Bez pokolenia' : 'Pokolenie ' + roman(k)}</h2><span>osób: ${list.length}${list.length !== all.length ? ' z ' + all.length : ''}</span></div>
+      <div class="cards">${list.map(p => `<button class="pc ${lcls(p)}" data-act="person" data-id="${esc(p.id)}"><span class="nm">${esc(labelOf(p))}</span><span class="yr">${esc(years(p)) || '&nbsp;'}</span>
+        <span class="rl">${p.malzonek && byId[p.malzonek] ? '∞ ' + esc(nameOf(byId[p.malzonek])) : ''}</span>
+        <span class="rl">${(byId[p.ojciec] || byId[p.matka]) ? '↑ ' + [byId[p.ojciec], byId[p.matka]].filter(Boolean).map(nameOf).map(esc).join(' + ') : ''}</span></button>`).join('')}</div>`;
+  }).join('');
+  return hdr('Graf rodziny', `${S.osoby.length} osób w ${keys.filter(k => k !== 'brak').length} pokoleniach`) + `<div class="view">${legend()}${S.ustawienia.filtry.grafLinia ? lineChips('glin', 'fglin') : ''}${html}</div>`;
+}
+
+/* Osoby */
+function vOsoby(){
+  const q = ui.q.trim().toLowerCase();
+  const F = S.ustawienia.filtry, fpok = F.osobyPok ? ui.pok : '', flin = F.osobyLinia ? ui.linia : '';
+  let list = S.osoby.filter(p => (!fpok || String(p.pokolenie) === fpok) && (!flin || lineage(p).id === flin) &&
+    (!q || [p.id, nameOf(p), p.panienskie, p.miejsceUr, p.miejsceZg, p.zawod, p.zamieszkanie, p.uwagi].join(' ').toLowerCase().includes(q)));
+  list = list.slice().sort((a,b) => idNum(a) - idNum(b));
+  const gens = [...new Set(S.osoby.map(p => p.pokolenie).filter(g => g !== '' && g != null))].sort((a,b) => a - b);
+  return hdr('Osoby', `${list.length} z ${S.osoby.length}`, `<button class="btn pri" data-act="newp">+ Dodaj</button>`) +
+    `<div class="view"><input class="search" id="q" type="search" placeholder="Szukaj: imię, nazwisko, ID, miejsce, uwagi" value="${esc(ui.q)}" aria-label="Szukaj osoby" autocomplete="off">
+    ${F.osobyPok ? `<div class="chips" role="group" aria-label="Pokolenie">${gens.map(g => `<button class="chip" data-act="fpok" data-v="${g}" aria-pressed="${String(g) === ui.pok}">pok. ${g}</button>`).join('')}</div>` : ''}
+    ${F.osobyLinia ? lineChips('linia', 'flin') : ''}
+    <ul class="list">${list.map(p => `<li><button class="row" data-act="person" data-id="${esc(p.id)}">${pTag(p)}
+      <span class="main"><span class="nm">${esc(labelOf(p))}</span><div class="sub"><span class="mono">${esc(p.id)}</span>${years(p) ? ' · ' + esc(years(p)) : ''}${p.zawod ? ' · ' + esc(p.zawod) : ''}</div></span><span class="pill">pok. ${esc(p.pokolenie || '?')}</span></button></li>`).join('') || '<li style="padding:14px" class="muted">Nic nie pasuje do filtra.</li>'}</ul></div>`;
+}
+
+/* Małżeństwa */
+function vMalz(){
+  const q = ui.mq.trim().toLowerCase();
+  const list = S.malzenstwa.filter(m => !q || [m.id, nameOf(byId[m.maz]), nameOf(byId[m.zona]), m.miejsce, m.parafia, m.akt, m.uwagi].join(' ').toLowerCase().includes(q));
+  const missing = S.osoby.filter(p => p.malzonek && byId[p.malzonek] && !S.malzenstwa.some(m => [m.maz, m.zona].includes(p.id))).length;
+  return hdr('Małżeństwa', `${S.malzenstwa.length} par, uzupełniają się z arkusza Osoby`) +
+    `<div class="view"><input class="search" id="mq" type="search" placeholder="Szukaj pary, miejsca, aktu" value="${esc(ui.mq)}" aria-label="Szukaj małżeństwa" autocomplete="off" style="margin-bottom:12px">
+    ${missing ? `<div class="banner">${missing} os. w związku bez wpisu na liście.</div>` : ''}
+    <ul class="list">${list.map(m => { const st = mStatus(m), a = byId[m.maz], b = byId[m.zona];
+      return `<li><button class="row" data-act="marr" data-id="${esc(m.id)}" style="align-items:flex-start"><span class="main"><span class="mono muted">${esc(m.id)}</span>
+        <div class="nm">${esc(labelOf(a) || m.maz)} <span class="muted">∞</span> ${esc(labelOf(b) || m.zona)}</div>
+        <div class="sub">${[m.data && 'ślub ' + m.data, m.miejsce, m.parafia, m.akt && 'akt ' + m.akt].filter(Boolean).map(esc).join(' · ') || 'brak danych o ślubie'}</div>
+        ${m.uwagi ? `<div class="sub">${esc(m.uwagi)}</div>` : ''}</span>
+        <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end"><span class="pill">dzieci: ${kids(m)}</span><span class="pill ${st === 'OK' ? 'ok' : 'warn'}">${st === 'OK' ? 'zgodne' : 'niezgodne'}</span></span></button></li>`; }).join('') || '<li style="padding:14px" class="muted">Brak par.</li>'}</ul></div>`;
+}
+
+/* Więcej */
+function vWiecej(){
+  const w = checks().length;
+  const item = (v, t, sub, badge) => `<li><button class="row" data-act="go" data-v="${v}"><span class="main"><span class="nm">${t}</span><div class="sub">${sub}</div></span>${badge || ''}<span class="arrow muted">›</span></button></li>`;
+  const open = S.zadania.filter(z => z.status !== 'Zrobione' && z.status !== 'Odrzucone').length;
+  return hdr('Więcej') + `<div class="view"><ul class="list menu">
+    ${item('zrodla','Źródła', 'Przejrzane dokumenty i ich wartość dla drzewa', `<span class="pill">${S.zrodla.length}</span>`)}
+    ${item('hipotezy','Hipotezy', 'Osoby możliwe, ale niepotwierdzone', `<span class="pill">${S.hipotezy.length}</span>`)}
+    ${item('zadania','Do zrobienia', 'Zadania według szans na wiarygodny wynik', `<span class="pill">${open} otwartych</span>`)}
+    ${item('kontrola','Kontrola danych', 'Braki i niezgodności w powiązaniach', w ? `<span class="pill warn">${w}</span>` : '<span class="pill ok">czysto</span>')}
+    ${item('ustawienia','Wygląd i filtry', 'Linie rodu, kolory i filtry w zakładkach')}
+    ${item('kopia','Kopia zapasowa', 'Zapis, wczytywanie, eksport do Excela', S.meta.backupAt ? '' : '<span class="pill warn">brak kopii</span>')}
+    ${item('pomoc','Zasady wpisywania', 'Jak wpisywać daty, ID, pewność i źródła')}
+  </ul></div>`;
+}
+
+/* Ustawienia: linie rodu, kolory, filtry */
+function vUst(){
+  const U = S.ustawienia, F = U.filtry;
+  const card = (l, i, isX) => `<div class="scard"><div class="ttl ln_${isX ? 'x' : l.id}"><span class="dot"></span>${isX ? 'Pozostałe osoby' : 'Linia ' + (i + 1)}</div><div class="fg">
+    <label class="f full"><span>Nazwa linii</span><input data-u="nazwa" data-i="${i}" value="${esc(l.nazwa)}" autocomplete="off"></label>
+    ${isX ? '' : `<label class="f full"><span>Nazwiska należące do linii</span><input data-u="nazwiska" data-i="${i}" value="${esc(l.nazwiska.join(', '))}" placeholder="np. Grabowski, Grabowska" autocomplete="off"><small>Oddzielaj przecinkami. Liczy się nazwisko panieńskie, a gdy go nie ma, obecne.</small></label>`}
+    <label class="f"><span>Kolor, jasny motyw</span><input type="color" data-u="kolor" data-i="${i}" value="${l.kolor}"></label>
+    <label class="f"><span>Kolor, ciemny motyw</span><input type="color" data-u="ciemny" data-i="${i}" value="${l.ciemny}"></label></div>
+    ${isX ? '' : `<div><button class="btn bad sm" data-act="delline" data-i="${i}">Usuń linię</button></div>`}</div>`;
+  const chk = (k, t) => `<li><label class="chk"><input type="checkbox" data-f="${k}" ${F[k] ? 'checked' : ''}><span>${t}</span></label></li>`;
+  return hdr('Wygląd i filtry', 'zmiany działają od razu', `<button class="btn sm" data-act="go" data-v="wiecej">Wróć</button>`) + `<div class="view">
+    <h3 style="margin-top:4px">Linie rodu i kolory</h3>
+    <p class="muted" style="font-size:13px">Linia nadaje kolor osobom w Drzewie, Grafie i Osobach. Osoba trafia do pierwszej linii, której lista nazwisk pasuje do jej nazwiska bazowego.</p>
+    ${U.linie.map((l, i) => card(l, i, false)).join('')}${card(U.inne, 'x', true)}
+    <div class="acts" style="margin:4px 0 6px"><button class="btn" data-act="addline">+ Dodaj linię</button></div>
+    <h3>Filtry w zakładkach</h3>
+    <ul class="list">${chk('osobyPok','Osoby: filtr pokolenia')}${chk('osobyLinia','Osoby: filtr linii')}${chk('grafLinia','Graf: filtr linii (ukrywa pozostałe osoby)')}${chk('drzewoLinia','Drzewo: filtr linii (wyszarza pozostałe osoby)')}</ul>
+    <h3>Domyślne ustawienia</h3>
+    <button class="btn bad" data-act="ustreset">Przywróć domyślne kolory i filtry</button></div>`;
+}
+
+/* Kontrola */
+function vKontrola(){
+  const c = checks();
+  return hdr('Kontrola danych', c.length ? `${c.length} uwag` : 'wszystko spójne', `<button class="btn sm" data-act="go" data-v="wiecej">Wróć</button>`) +
+    `<div class="view">${c.length ? `<ul class="list">${c.map(x => `<li><button class="row" data-act="${x.mid ? 'marr' : 'person'}" data-id="${esc(x.mid || x.id)}"><span class="pill ${x.sev}">${x.sev === 'bad' ? 'błąd' : 'uwaga'}</span><span class="main">${esc(x.t)}</span><span class="muted">›</span></button></li>`).join('')}</ul>` :
+    '<div class="banner ok">Brak braków. Każde ID rodzica, małżonka i źródła wskazuje istniejący wpis, a pokolenia zgadzają się z rodzicami.</div>'}</div>`;
+}
+
+/* Pomoc */
+function vPomoc(){
+  const R = [['ID osoby','P001, P002… Nowa osoba dostaje kolejny wolny numer automatycznie. Powiązania (ojciec, matka, małżonek) wybierasz z listy, nie wpisujesz nazwiskiem.'],
+    ['Daty','Pełna data w formacie 10.07.1910. Rok wypełnia się sam z daty; sam rok wpisz w polu „Rok”. Wiek w chwili śmierci liczy się z lat.'],
+    ['Nazwisko panieńskie','Wpisuj tylko, gdy znasz je z dokumentu. Nazwisko po mężu trzymaj w polu „Nazwisko (obecne)”.'],
+    ['Poziom pewności','Potwierdzone dokumentem / Podane (niezweryfikowane) / Hipoteza / Odrzucone.'],
+    ['Źródło','Wpisuj ID ze Źródeł (np. S09). Brakujące ID pokaże Kontrola danych.'],
+    ['Uwagi','Pisownie wariantowe, wątpliwości, co sprawdzić dalej. Nie łącz osób wyłącznie na podstawie zgodności imion, nazwisk lub dat.'],
+    ['Pokolenie','Liczba od 1. Dziecko ma pokolenie rodzica + 1 (aplikacja podpowiada je po wybraniu rodzica). Osoba bez pokolenia trafia do osobnej grupy na grafie.'],
+    ['Kolejność na grafie','Małe liczby na lewo. Dzięki temu ustawisz małżonków i rodzeństwo obok siebie. Bez numeru osoba trafia na koniec rzędu.'],
+    ['Małżonek','Ustawiasz go w jednej osobie, a druga dostaje powiązanie sama. Para pojawia się w Małżeństwach; datę, parafię i akt dopisujesz tam.'],
+    ['Drzewo','Pokazuje wszystkich potomków osoby głównej (ojciec lub matka w Osoby). Osobę główną zmienisz u góry widoku Drzewo.']];
+  return hdr('Zasady wpisywania', '', `<button class="btn sm" data-act="go" data-v="wiecej">Wróć</button>`) + `<div class="view">
+    <p class="muted">Aplikacja liczy sama: imię i nazwisko, wiek, rodziców, małżonków, liczbę dzieci, drzewo, graf i listę małżeństw. Wpisujesz tylko dane osób.</p>
+    <dl class="kv" style="grid-template-columns:minmax(100px,30%) 1fr">${R.map(r => `<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl></div>`;
+}
+
+/* Źródła / Hipotezy / Zadania: wspólny edytor list */
+const SCH = {
+  zrodla:{title:'Źródła', one:'źródło', idp:'S', f:[['id','ID',{ro:1}],['archiwum','Archiwum / baza'],['zespol','Zespół'],['sygnatura','Sygnatura'],['opis','Opis dokumentu','area'],['daty','Daty'],['osoby','Osoby o nazwisku Bany w dokumencie'],['wartosc','Wartość dla drzewa',['','Wysoka','Średnia','Niska','Brak','Podane']],['uwagi','Uwagi / wniosek','area'],['link','Link / skan']],
+    head:z => z.opis || z.archiwum, sub:z => [z.archiwum, z.zespol, z.sygnatura && 'sygn. ' + z.sygnatura, z.daty].filter(Boolean).join(' · '), tag:z => z.wartosc},
+  hipotezy:{title:'Hipotezy', one:'hipotezę', idp:'H', f:[['id','ID',{ro:1}],['osoba','Osoba'],['relacja','Hipotetyczna relacja'],['podstawa','Podstawa','area'],['brakuje','Czego brakuje','area'],['gdzie','Gdzie sprawdzić','area'],['status','Status',['Do sprawdzenia','Potwierdzona','Odrzucona']]],
+    head:h => h.osoba, sub:h => h.relacja, tag:h => h.status},
+  zadania:{title:'Do zrobienia', one:'zadanie', idp:'', f:[['prio','Priorytet',{n:1}],['zadanie','Zadanie','area'],['instytucja','Instytucja / baza'],['cel','Cel (kogo dotyczy)'],['szansa','Szansa',['','Wysoka','Średnia','Niska']],['status','Status',['Do zrobienia','W toku','Zrobione','Odrzucone']],['termin','Termin'],['uwagi','Uwagi','area']],
+    head:z => z.zadanie, sub:z => [z.instytucja, z.cel && '→ ' + z.cel, z.termin && 'do ' + z.termin].filter(Boolean).join(' · '), tag:z => z.status}
+};
+function vCrud(k){
+  const sc = SCH[k]; let list = S[k].map((x, i) => ({x, i}));
+  if (k === 'zadania') list.sort((a,b) => (num(a.x.prio) ?? 99) - (num(b.x.prio) ?? 99));
+  const done = x => ['Zrobione','Odrzucone','Potwierdzona'].includes(x.status);
+  return hdr(sc.title, `${S[k].length} wpisów`, `<button class="btn pri" data-act="newc" data-k="${k}">+ Dodaj</button>`) +
+    `<div class="view"><p><button class="btn sm" data-act="go" data-v="wiecej">‹ Więcej</button></p><ul class="list">${list.map(({x, i}) => `<li><button class="row" data-act="editc" data-k="${k}" data-i="${i}" style="align-items:flex-start;${done(x) ? 'opacity:.6' : ''}">
+      <span class="main"><span class="mono muted">${esc(x.id || (k === 'zadania' ? 'prio ' + (x.prio ?? '–') : ''))}</span><div class="nm">${esc(sc.head(x))}</div><div class="sub">${esc(sc.sub(x))}</div>${k === 'zadania' && x.szansa ? `<div class="sub">szansa: ${esc(x.szansa)}</div>` : ''}</span>
+      ${sc.tag(x) ? `<span class="pill">${esc(sc.tag(x))}</span>` : ''}</button></li>`).join('') || '<li style="padding:14px" class="muted">Pusto.</li>'}</ul></div>`;
+}
+
+/* Kopia zapasowa */
+function vKopia(){
+  const bk = S.meta.backupAt ? new Date(S.meta.backupAt).toLocaleString('pl-PL') : 'jeszcze nie robiono';
+  const prev = (() => { try { return !!localStorage.getItem(KEY_PREV); } catch(e){ return false; } })();
+  return hdr('Kopia zapasowa', `ostatnia: ${bk}`, `<button class="btn sm" data-act="go" data-v="wiecej">Wróć</button>`) + `<div class="view">
+    <div class="banner ${S.meta.changes > 15 && !S.meta.backupAt ? '' : 'ok'}">Dane leżą w pamięci tej przeglądarki na tym urządzeniu. Wyczyszczenie danych witryn lub dłuższa nieużywana karta w Safari może je skasować, więc zrób kopię po każdej większej sesji.</div>
+    <h3>Zapisz</h3>
+    <div class="acts"><button class="btn pri" data-act="bkcopy">Kopiuj kopię (tekst)</button><button class="btn" data-act="bkfile">Pobierz plik .json</button><button class="btn" data-act="bkxlsx">Eksport do Excela</button></div>
+    <p class="muted" style="margin-top:8px;font-size:13px">Kopia jako tekst działa wszędzie: wklej ją do Notatek lub maila. Pobieranie plików działa w zwykłej karcie przeglądarki, ale nie w podglądzie osadzonym w aplikacji.</p>
+    <h3>Wczytaj</h3>
+    <label class="f"><span>Plik kopii (.json) lub arkusz (.xlsx)</span><input id="bkin" type="file" accept=".json,.xlsx,application/json"></label>
+    <label class="f" style="margin-top:10px"><span>Albo wklej tekst kopii</span><textarea class="raw" id="bkpaste" placeholder="Wklej tu skopiowany tekst kopii"></textarea></label>
+    <div class="acts" style="margin-top:8px"><button class="btn" data-act="bkpaste">Wczytaj wklejony tekst</button>${prev ? '<button class="btn" data-act="bkundo">Cofnij ostatnie wczytanie</button>' : ''}</div>
+    <h3>Dane początkowe</h3>
+    <p class="muted" style="font-size:13px">Przywraca stan z arkusza drzewo_genealogiczne_Bany_v3. Twoje zmiany zostaną zastąpione (poprzedni stan da się cofnąć).</p>
+    <button class="btn bad" data-act="reset">Przywróć dane z arkusza</button></div>`;
+}
+
+/* ---------- arkusze (modale) ---------- */
+let stack = [];
+function openSheet(title, body, footer = '', backable = false){
+  $('#layer').innerHTML = `<div class="shw"><div class="bg" data-act="close"></div><div class="sh" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+    <header>${backable ? '<button class="btn sm" data-act="back">‹</button>' : ''}<h2>${title}</h2><button class="btn sm" data-act="close" aria-label="Zamknij">Zamknij</button></header>
+    <div class="bd">${body}</div>${footer ? `<footer>${footer}</footer>` : ''}</div></div>`;
+  document.body.style.overflow = 'hidden';
+  const f = $('#layer .sh .bd'); if (f) f.scrollTop = 0;
+}
+function closeSheet(){ $('#layer').innerHTML = ''; document.body.style.overflow = ''; stack = []; }
+function toast(t){ const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 2600); }
+function ask(title, text, ok, fn, danger = true){
+  openSheet(esc(title), `<p>${esc(text)}</p>`, `<button class="btn" data-act="close">Anuluj</button><button class="btn ${danger ? 'bad' : 'pri'}" id="askok">${esc(ok)}</button>`);
+  $('#askok').onclick = () => { closeSheet(); fn(); };
+}
+
+/* szczegóły osoby */
+function showPerson(id, push = true){
+  const p = byId[id]; if (!p) return;
+  if (push) stack.push(id);
+  const sp = byId[p.malzonek], fa = byId[p.ojciec], mo = byId[p.matka];
+  const ch = childrenOf(p.id), sib = S.osoby.filter(o => o.id !== p.id && ((p.ojciec && o.ojciec === p.ojciec) || (p.matka && o.matka === p.matka))).sort(cmpTree);
+  const rel = (list) => list.length ? `<div class="rel">${list.map(o => `<button data-act="person" data-id="${esc(o.id)}">${esc(labelOf(o))} <span class="mono muted">${esc(years(o))}</span></button>`).join('')}</div>` : '<span class="muted">brak</span>';
+  const fact = (k, v) => v ? `<dt>${k}</dt><dd>${esc(v)}</dd>` : '';
+  const a = age(p);
+  const body = `<p class="${lcls(p)}"><span class="dot"></span> <b>${esc(lineage(p).nazwa)}</b> · pokolenie ${esc(p.pokolenie || '?')} · <span class="mono">${esc(p.id)}</span> ${p.id === S.korzen ? ' · <span class="pill">osoba główna drzewa</span>' : ''}</p>
+    <dl class="kv">${fact('Urodzenie', [p.dataUr || p.rokUr, p.miejsceUr, p.parafiaUr].filter(Boolean).join(', '))}${fact('Śmierć', [p.dataZg || p.rokZg, p.miejsceZg].filter(Boolean).join(', ') + (a != null ? ` (wiek: ${a})` : ''))}
+      ${fact('Zawód', p.zawod)}${fact('Zamieszkanie', p.zamieszkanie)}${fact('Żyje', p.zyje)}${fact('Pewność', p.pewnosc)}${fact('Źródło', p.zrodlo)}${fact('Uwagi', p.uwagi)}</dl>
+    <div class="sec">Rodzice</div>${rel([fa, mo].filter(Boolean))}
+    <div class="sec">Małżonek</div>${rel(sp ? [sp] : [])}
+    <div class="sec">Dzieci (${ch.length})</div>${rel(ch)}
+    ${sib.length ? `<div class="sec">Rodzeństwo (${sib.length})</div>${rel(sib)}` : ''}`;
+  openSheet(esc(labelOf(p)), body, `<button class="btn pri" data-act="editp" data-id="${esc(p.id)}">Edytuj</button><button class="btn" data-act="addkid" data-id="${esc(p.id)}">+ Dziecko</button><button class="btn" data-act="addsp" data-id="${esc(p.id)}">+ Małżonek</button><button class="btn" data-act="root" data-id="${esc(p.id)}">Pokaż drzewo od tej osoby</button>`, stack.length > 1);
+}
+
+/* edytor osoby */
+const PF = [
+  ['imie','Imię / imiona'],['nazwisko','Nazwisko (obecne)'],['panienskie','Nazwisko panieńskie',{hint:'Tylko, gdy znasz je z dokumentu. „?” oznacza nieznane.'}],['plec','Płeć',['','M','K']],
+  ['pokolenie','Pokolenie',{n:1}],['kolejnosc','Kolejność na grafie',{n:1,hint:'Małe liczby na lewo. Ustawia małżonków i rodzeństwo obok siebie.'}],
+  ['dataUr','Data urodzenia',{ph:'10.07.1910'}],['rokUr','Rok urodzenia',{n:1,hint:'Wypełnia się z daty; wpisz ręcznie, gdy znasz sam rok.'}],
+  ['miejsceUr','Miejsce urodzenia'],['parafiaUr','Parafia / USC (ur.)'],
+  ['dataZg','Data śmierci',{ph:'25.02.1978'}],['rokZg','Rok śmierci',{n:1}],['miejsceZg','Miejsce śmierci'],['zyje','Żyje?',['Tak','Nie','?']],
+  ['ojciec','Ojciec',{rel:'M'}],['matka','Matka',{rel:'K'}],['malzonek','Małżonek(ka)',{rel:'*'}],
+  ['zawod','Zawód / zajęcie'],['zamieszkanie','Miejsce zamieszkania'],['pewnosc','Poziom pewności',['','Potwierdzone dokumentem','Podane (niezweryfikowane)','Hipoteza','Odrzucone']],
+  ['zrodlo','Źródło (ID ze Źródeł)',{ph:'S01, S02'}],['uwagi','Uwagi','area']
+];
+const nextPid = () => 'P' + String(Math.max(0, ...S.osoby.map(p => parseInt(String(p.id).slice(1), 10) || 0)) + 1).padStart(3, '0');
+function field(k, l, spec, val, id = 'f_'){
+  const full = spec === 'area' || (spec && spec.hint) ? ' full' : '';
+  const sp = Array.isArray(spec) ? {o:spec} : (typeof spec === 'object' ? spec : {});
+  let inner;
+  if (spec === 'area') inner = `<textarea id="${id}${k}">${esc(val)}</textarea>`;
+  else if (sp.o) inner = `<select id="${id}${k}">${sp.o.map(o => `<option ${o === val ? 'selected' : ''} value="${esc(o)}">${esc(o || '—')}</option>`).join('')}</select>`;
+  else if (sp.rel) inner = `<select id="${id}${k}">${relOpts(sp.rel, val, id === 'f_' ? editing : null)}</select>`;
+  else inner = `<input id="${id}${k}" value="${esc(val)}" ${sp.n ? 'inputmode="numeric"' : ''} ${sp.ph ? `placeholder="${esc(sp.ph)}"` : ''} ${sp.ro ? 'readonly' : ''} autocomplete="off">`;
+  return `<label class="f${full}"><span>${esc(l)}</span>${inner}${sp.hint ? `<small>${esc(sp.hint)}</small>` : ''}</label>`;
+}
+let editing = null;
+function relOpts(g, val, self){
+  const list = S.osoby.filter(p => p.id !== self && (g === '*' || !p.plec || p.plec === g || p.id === val)).sort((a,b) => idNum(a) - idNum(b));
+  return `<option value="">— brak —</option>` + list.map(p => `<option value="${esc(p.id)}" ${p.id === val ? 'selected' : ''}>${esc(p.id)} · ${esc(labelOf(p))} ${esc(years(p))}</option>`).join('');
+}
+function editPerson(id, pre = {}){
+  const isNew = !id; editing = id;
+  const p = isNew ? Object.assign({id: nextPid(), zyje:'Tak', pewnosc:'Podane (niezweryfikowane)', zrodlo:''}, pre) : byId[id];
+  const body = `<div class="fg"><label class="f full"><span>ID osoby</span><input id="f_id" value="${esc(p.id)}" readonly></label>${PF.map(([k,l,s]) => field(k, l, s, p[k] ?? '')).join('')}</div><div id="pwarn"></div>`;
+  openSheet(isNew ? 'Nowa osoba' : 'Edycja: ' + esc(nameOf(p)), body,
+    `<button class="btn pri" data-act="savep" data-new="${isNew ? 1 : ''}">Zapisz</button>${isNew ? '' : '<button class="btn bad" data-act="delp" data-id="' + esc(p.id) + '">Usuń</button>'}`);
+  const gen = () => { const q = byId[$('#f_ojciec').value] || byId[$('#f_matka').value]; const g = $('#f_pokolenie'); if (q && !g.value && num(q.pokolenie) != null) g.value = num(q.pokolenie) + 1; };
+  $('#f_ojciec').onchange = gen; $('#f_matka').onchange = gen;
+}
+function readForm(){
+  const o = {id: $('#f_id').value};
+  for (const [k,,s] of PF){
+    let v = $('#f_' + k).value.trim();
+    if (s && s.n) v = v === '' ? '' : (isNaN(+v) ? '' : +v);
+    o[k] = v;
+  }
+  const yr = s => { const m = /(\d{4})\s*$/.exec(s || ''); return m ? +m[1] : null; };
+  if (yr(o.dataUr)) o.rokUr = yr(o.dataUr); if (yr(o.dataZg)) o.rokZg = yr(o.dataZg);
+  return o;
+}
+function savePerson(isNew){
+  const o = readForm();
+  if (!o.imie && !o.nazwisko){ $('#pwarn').innerHTML = '<div class="warnbox">Wpisz imię lub nazwisko.</div>'; return; }
+  if (o.malzonek === o.id || o.ojciec === o.id || o.matka === o.id){ $('#pwarn').innerHTML = '<div class="warnbox">Osoba nie może być własnym rodzicem ani małżonkiem.</div>'; return; }
+  if (isNew){ if (byId[o.id]) o.id = nextPid(); S.osoby.push(o); }
+  else {
+    const old = byId[o.id];
+    if (old.malzonek && old.malzonek !== o.malzonek && byId[old.malzonek] && byId[old.malzonek].malzonek === o.id) byId[old.malzonek].malzonek = '';
+    Object.assign(old, o);
+  }
+  reindex();
+  if (o.malzonek && byId[o.malzonek]){
+    const q = byId[o.malzonek];
+    if (q.malzonek && q.malzonek !== o.id && byId[q.malzonek] && byId[q.malzonek].malzonek === q.id) byId[q.malzonek].malzonek = '';
+    q.malzonek = o.id;
+  }
+  syncMarriages(); save(); closeSheet(); render(); toast(isNew ? 'Dodano osobę' : 'Zapisano'); showPerson(o.id);
+}
+function deletePerson(id){
+  const p = byId[id];
+  ask('Usunąć osobę?', `${nameOf(p)} (${id}) zniknie z drzewa, grafu i małżeństw. Powiązania innych osób z nią zostaną wyczyszczone.`, 'Usuń', () => {
+    S.osoby = S.osoby.filter(o => o.id !== id);
+    S.osoby.forEach(o => { for (const k of ['ojciec','matka','malzonek']) if (o[k] === id) o[k] = ''; });
+    S.malzenstwa = S.malzenstwa.filter(m => m.maz !== id && m.zona !== id);
+    if (S.korzen === id) S.korzen = (S.osoby[0] || {}).id || '';
+    reindex(); syncMarriages(); save(); render(); toast('Usunięto');
+  });
+}
+
+/* małżeństwo */
+const MF = [['data','Data ślubu',{ph:'12.06.1935'}],['miejsce','Miejsce ślubu'],['parafia','Parafia / USC'],['akt','Nr aktu'],['zrodlo','Źródło (ID)'],['uwagi','Uwagi','area']];
+function showMarr(id){
+  const m = S.malzenstwa.find(x => x.id === id); if (!m) return;
+  const st = mStatus(m), a = byId[m.maz], b = byId[m.zona];
+  openSheet(esc(m.id) + ' · ' + esc(nameOf(a) || m.maz) + ' ∞ ' + esc(nameOf(b) || m.zona),
+    `${st !== 'OK' ? `<div class="warnbox" style="margin:0 0 12px">${esc(st)}. Ustaw małżonków w Osoby albo usuń ten wpis.</div>` : ''}
+    <div class="rel" style="margin-bottom:12px">${a ? `<button data-act="person" data-id="${esc(a.id)}">Mąż: ${esc(labelOf(a))}</button>` : ''}${b ? `<button data-act="person" data-id="${esc(b.id)}">Żona: ${esc(labelOf(b))}</button>` : ''}</div>
+    <p class="muted">Dzieci w arkuszu Osoby: <b>${kids(m)}</b></p>
+    <div class="fg">${MF.map(([k,l,s]) => field(k, l, s, m[k] ?? '', 'm_')).join('')}</div>`,
+    `<button class="btn pri" data-act="savem" data-id="${esc(id)}">Zapisz</button>${st !== 'OK' ? `<button class="btn bad" data-act="delm" data-id="${esc(id)}">Usuń wpis</button>` : ''}`);
+}
+
+/* wspólne listy */
+function editCrud(k, i){
+  const sc = SCH[k], isNew = i == null;
+  const x = isNew ? Object.fromEntries(sc.f.map(([f]) => [f, ''])) : S[k][i];
+  if (isNew){
+    if (sc.idp){ x.id = sc.idp + String(Math.max(0, ...S[k].map(e => parseInt(String(e.id).slice(1), 10) || 0)) + 1).padStart(2, '0'); }
+    if (k === 'zadania'){ x.prio = (Math.max(0, ...S[k].map(e => num(e.prio) || 0)) + 1); x.status = 'Do zrobienia'; }
+    if (k === 'hipotezy') x.status = 'Do sprawdzenia';
+  }
+  openSheet((isNew ? 'Nowe: ' : 'Edycja: ') + sc.one, `<div class="fg">${sc.f.map(([f,l,s]) => field(f, l, s, x[f] ?? '', 'c_')).join('')}</div>`,
+    `<button class="btn pri" data-act="savec" data-k="${k}" data-i="${isNew ? '' : i}">Zapisz</button>${isNew ? '' : `<button class="btn bad" data-act="delc" data-k="${k}" data-i="${i}">Usuń</button>`}`);
+}
+function saveCrud(k, i){
+  const sc = SCH[k], o = {};
+  for (const [f,,s] of sc.f){ let v = $('#c_' + f).value.trim(); if (s && s.n) v = v === '' ? '' : +v; o[f] = v; }
+  if (i === '') S[k].push(o); else Object.assign(S[k][+i], o);
+  save(); closeSheet(); render(); toast('Zapisano');
+}
+
+/* ---------- kopia: zapis, wczytanie, Excel ---------- */
+const stamp = () => new Date().toISOString().slice(0,10);
+const exportJson = () => JSON.stringify({app:'drzewo-bany', v:1, ...S}, null, 1);
+function markBackup(){ S.meta.backupAt = Date.now(); S.meta.changes = 0; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+async function copyText(t){
+  try { await navigator.clipboard.writeText(t); return true; } catch(e){}
+  try { const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch(e){ return false; }
+}
+function download(name, blob){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function applyImport(cand, label){
+  const summary = `${cand.osoby.length} osób, ${cand.malzenstwa.length} małżeństw, ${cand.zrodla.length} źródeł, ${cand.hipotezy.length} hipotez, ${cand.zadania.length} zadań`;
+  ask('Wczytać dane?', `${label}: ${summary}. Obecne dane zostaną zastąpione. Poprzedni stan zachowam, żeby można było cofnąć.`, 'Wczytaj', () => {
+    try { localStorage.setItem(KEY_PREV, JSON.stringify(S)); } catch(e){}
+    S = normalize(cand); if (!byIdHas(S.korzen)) S.korzen = (S.osoby[0] || {}).id || '';
+    reindex(); syncMarriages(); save(); render(); toast('Wczytano');
+  }, false);
+}
+const byIdHas = id => S.osoby.some(p => p.id === id);
+function parseJsonText(t){
+  const o = JSON.parse(t);
+  if (!o || !Array.isArray(o.osoby)) throw new Error('To nie jest kopia aplikacji Drzewo Bany.');
+  return normalize({osoby:o.osoby, malzenstwa:o.malzenstwa || [], zrodla:o.zrodla || [], hipotezy:o.hipotezy || [], zadania:o.zadania || [], korzen:o.korzen, meta:o.meta, ustawienia:o.ustawienia || S.ustawienia});
+}
+let xlsxP;
+function loadXlsx(){
+  if (window.XLSX) return Promise.resolve();
+  return xlsxP ||= new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = res; s.onerror = () => { xlsxP = null; rej(new Error('Nie udało się wczytać modułu Excela (potrzebny internet).')); }; document.head.appendChild(s); });
+}
+const OSOBY_H = [['ID','id'],['Imię i nazwisko',null],['Imię / imiona','imie'],['Nazwisko (obecne)','nazwisko'],['Nazwisko panieńskie','panienskie'],['Płeć (M/K)','plec'],['Pokolenie','pokolenie'],['Data urodzenia','dataUr'],['Rok urodzenia','rokUr'],['Miejsce urodzenia','miejsceUr'],['Parafia / USC (ur.)','parafiaUr'],['Data śmierci','dataZg'],['Rok śmierci','rokZg'],['Miejsce śmierci','miejsceZg'],['Wiek w chwili śmierci',null],['ID ojca','ojciec'],['Ojciec',null],['ID matki','matka'],['Matka',null],['ID małżonka','malzonek'],['Małżonek',null],['Zawód / zajęcie','zawod'],['Miejsce zamieszkania','zamieszkanie'],['Żyje?','zyje'],['Poziom pewności','pewnosc'],['Źródło (ID z arkusza Źródła)','zrodlo'],['Uwagi','uwagi'],['Kolejność na grafie (opcjonalnie)','kolejnosc']];
+const MALZ_H = [['ID','id'],['ID męża','maz'],['Mąż',null],['ID żony','zona'],['Żona',null],['Data ślubu','data'],['Miejsce ślubu','miejsce'],['Parafia / USC','parafia'],['Nr aktu','akt'],['Źródło','zrodlo'],['Liczba dzieci w arkuszu Osoby',null],['Uwagi','uwagi']];
+const ZR_H = [['ID','id'],['Archiwum / baza','archiwum'],['Zespół','zespol'],['Sygnatura','sygnatura'],['Opis dokumentu','opis'],['Daty','daty'],['Osoby o nazwisku Bany w dokumencie','osoby'],['Wartość dla drzewa','wartosc'],['Uwagi / wniosek','uwagi'],['Link / skan','link']];
+const HY_H = [['ID','id'],['Osoba','osoba'],['Hipotetyczna relacja','relacja'],['Podstawa','podstawa'],['Czego brakuje','brakuje'],['Gdzie sprawdzić','gdzie'],['Status','status']];
+const TD_H = [['Prio','prio'],['Zadanie','zadanie'],['Instytucja / baza','instytucja'],['Cel (kogo dotyczy)','cel'],['Szansa','szansa'],['Status','status'],['Termin','termin'],['Uwagi','uwagi']];
+async function exportXlsx(){
+  await loadXlsx();
+  const wb = XLSX.utils.book_new();
+  const sheet = (name, H, rows, extra = {}) => XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([H.map(h => h[0]), ...rows.map(r => H.map(([h,k]) => k ? (r[k] ?? '') : (extra[h] ? extra[h](r) : '')))]), name);
+  sheet('Osoby', OSOBY_H, S.osoby, {'Imię i nazwisko':nameOf, 'Wiek w chwili śmierci':p => age(p) ?? '', 'Ojciec':p => nameOf(byId[p.ojciec]), 'Matka':p => nameOf(byId[p.matka]), 'Małżonek':p => nameOf(byId[p.malzonek])});
+  sheet('Małżeństwa', MALZ_H, S.malzenstwa, {'Mąż':m => nameOf(byId[m.maz]), 'Żona':m => nameOf(byId[m.zona]), 'Liczba dzieci w arkuszu Osoby':kids});
+  sheet('Źródła', ZR_H, S.zrodla); sheet('Hipotezy', HY_H, S.hipotezy); sheet('Do zrobienia', TD_H, S.zadania);
+  XLSX.writeFile(wb, `drzewo_Bany_${stamp()}.xlsx`);
+}
+async function importXlsx(file){
+  await loadXlsx();
+  const wb = XLSX.read(await file.arrayBuffer(), {type:'array', cellDates:true});
+  const fmt = v => { if (v instanceof Date){ const d = new Date(v.getTime() + 12 * 3600e3); return `${String(d.getUTCDate()).padStart(2,'0')}.${String(d.getUTCMonth() + 1).padStart(2,'0')}.${d.getUTCFullYear()}`; } return v == null ? '' : (typeof v === 'string' ? v.trim() : v); };
+  const read = (name, H) => {
+    const ws = wb.Sheets[name]; if (!ws) return [];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:true}); const head = (rows[0] || []).map(h => String(h).trim());
+    const col = {}; for (const [h,k] of H) if (k){ const i = head.indexOf(h); if (i >= 0) col[k] = i; }
+    return rows.slice(1).map(r => Object.fromEntries(Object.entries(col).map(([k,i]) => [k, fmt(r[i])]))).filter(o => Object.values(o).some(v => v !== ''));
+  };
+  const osoby = read('Osoby', OSOBY_H).filter(p => p.id);
+  if (!osoby.length) throw new Error('W pliku nie ma arkusza „Osoby” z kolumną ID.');
+  for (const p of osoby){ for (const k of ['pokolenie','rokUr','rokZg','kolejnosc']) p[k] = num(p[k]) ?? ''; if (!p.plec) p.plec = ''; }
+  return normalize({osoby, malzenstwa:read('Małżeństwa', MALZ_H).filter(m => m.id), zrodla:read('Źródła', ZR_H), hipotezy:read('Hipotezy', HY_H), zadania:read('Do zrobienia', TD_H).map(t => ({...t, prio:num(t.prio) ?? t.prio})), korzen:S.korzen, ustawienia:S.ustawienia});
+}
+
+/* ---------- zdarzenia ---------- */
+const A = {
+  go: t => go(t.dataset.v), close: closeSheet,
+  back: () => { stack.pop(); const id = stack.pop(); if (id) showPerson(id); else closeSheet(); },
+  person: t => showPerson(t.dataset.id, true),
+  tg: t => { const id = t.dataset.id; ui.collapsed.has(id) ? ui.collapsed.delete(id) : ui.collapsed.add(id); render(); },
+  fpok: t => { ui.pok = ui.pok === t.dataset.v ? '' : t.dataset.v; render(); },
+  fglin: t => { ui.glin = ui.glin === t.dataset.v ? '' : t.dataset.v; render(); },
+  fdlin: t => { ui.dlin = ui.dlin === t.dataset.v ? '' : t.dataset.v; render(); },
+  addline: () => { S.ustawienia.linie.push({id:'l' + Date.now().toString(36), nazwa:'Nowa linia', kolor:'#7A4E9C', ciemny:'#B48AD6', nazwiska:[]}); save(); render(); },
+  delline: t => { const l = S.ustawienia.linie[+t.dataset.i]; ask('Usunąć linię?', `Linia „${l.nazwa}” zniknie, a jej osoby trafią do pozostałych.`, 'Usuń', () => { S.ustawienia.linie.splice(+t.dataset.i, 1); for (const k of ['linia','glin','dlin']) if (ui[k] === l.id) ui[k] = ''; save(); render(); }); },
+  ustreset: () => ask('Przywrócić domyślne?', 'Kolory, nazwy linii i filtry wrócą do ustawień początkowych.', 'Przywróć', () => { S.ustawienia = normUst(null); ui.linia = ui.glin = ui.dlin = ''; save(); render(); toast('Przywrócono'); }),
+  flin: t => { ui.linia = ui.linia === t.dataset.v ? '' : t.dataset.v; render(); },
+  newp: () => editPerson(null),
+  editp: t => editPerson(t.dataset.id),
+  savep: t => savePerson(!!t.dataset.new),
+  delp: t => deletePerson(t.dataset.id),
+  root: t => { S.korzen = t.dataset.id; save(); closeSheet(); go('drzewo'); render(); },
+  addkid: t => { const p = byId[t.dataset.id], q = byId[p.malzonek]; const f = p.plec === 'K' ? q : p, m = p.plec === 'K' ? p : q;
+    editPerson(null, {ojciec: f ? f.id : '', matka: m ? m.id : '', pokolenie: num(p.pokolenie) != null ? num(p.pokolenie) + 1 : '', nazwisko: f ? f.nazwisko : ''}); },
+  addsp: t => { const p = byId[t.dataset.id]; editPerson(null, {malzonek: p.id, pokolenie: p.pokolenie, plec: p.plec === 'M' ? 'K' : p.plec === 'K' ? 'M' : ''}); },
+  marr: t => showMarr(t.dataset.id),
+  savem: t => { const m = S.malzenstwa.find(x => x.id === t.dataset.id); for (const [k] of MF) m[k] = $('#m_' + k).value.trim(); save(); closeSheet(); render(); toast('Zapisano'); },
+  delm: t => { S.malzenstwa = S.malzenstwa.filter(x => x.id !== t.dataset.id); save(); closeSheet(); render(); toast('Usunięto wpis'); },
+  newc: t => editCrud(t.dataset.k, null), editc: t => editCrud(t.dataset.k, +t.dataset.i),
+  savec: t => saveCrud(t.dataset.k, t.dataset.i),
+  delc: t => { const k = t.dataset.k, i = +t.dataset.i; ask('Usunąć wpis?', 'Tej operacji nie da się cofnąć.', 'Usuń', () => { S[k].splice(i, 1); save(); render(); toast('Usunięto'); }); },
+  bkcopy: async () => { const ok = await copyText(exportJson()); if (ok){ markBackup(); render(); toast('Skopiowano kopię. Wklej ją w Notatkach lub mailu.'); } else toast('Nie udało się skopiować. Użyj pobierania pliku.'); },
+  bkfile: () => { download(`drzewo_Bany_${stamp()}.json`, new Blob([exportJson()], {type:'application/json'})); markBackup(); render(); toast('Jeśli plik się nie pobrał, użyj „Kopiuj kopię”.'); },
+  bkxlsx: async () => { try { await exportXlsx(); toast('Eksport gotowy'); } catch(e){ toast(e.message); } },
+  bkpaste: () => { try { applyImport(parseJsonText($('#bkpaste').value), 'Wklejona kopia'); } catch(e){ toast('Nie rozpoznano kopii: ' + e.message); } },
+  bkundo: () => { try { const t = localStorage.getItem(KEY_PREV); S = normalize(JSON.parse(t)); reindex(); syncMarriages(); save(); render(); toast('Przywrócono poprzedni stan'); } catch(e){ toast('Brak poprzedniego stanu'); } },
+  reset: () => ask('Przywrócić dane z arkusza?', 'Wszystkie Twoje zmiany zostaną zastąpione danymi początkowymi.', 'Przywróć', () => { try { localStorage.setItem(KEY_PREV, JSON.stringify(S)); } catch(e){} S = normalize(clone(SEED)); reindex(); syncMarriages(); save(); render(); toast('Przywrócono dane z arkusza'); })
+};
+document.addEventListener('click', e => { const t = e.target.closest('[data-act]'); if (!t) return; if (t.dataset.act === 'close' && e.target.closest('.sh') && !t.matches('button')) return; const f = A[t.dataset.act]; if (f){ e.preventDefault(); f(t); } });
+let ustT;
+document.addEventListener('input', e => {
+  const d = e.target.dataset;
+  if (d && d.u){ const U = S.ustawienia, tgt = d.i === 'x' ? U.inne : U.linie[+d.i]; if (!tgt) return;
+    if (d.u === 'nazwiska') tgt.nazwiska = e.target.value.split(',').map(s => s.trim()).filter(Boolean); else tgt[d.u] = e.target.value;
+    applyTheme(); clearTimeout(ustT); ustT = setTimeout(save, 400); return; }
+  if (e.target.id === 'q'){ ui.q = e.target.value; const pos = e.target.selectionStart; render(); const q = $('#q'); q.focus(); q.setSelectionRange(pos, pos); }
+  if (e.target.id === 'mq'){ ui.mq = e.target.value; const pos = e.target.selectionStart; render(); const q = $('#mq'); q.focus(); q.setSelectionRange(pos, pos); }
+});
+document.addEventListener('change', async e => {
+  if (e.target.dataset && e.target.dataset.f){ const k = e.target.dataset.f; S.ustawienia.filtry[k] = e.target.checked; if (!e.target.checked){ if (k === 'osobyPok') ui.pok = ''; if (k === 'osobyLinia') ui.linia = ''; if (k === 'grafLinia') ui.glin = ''; if (k === 'drzewoLinia') ui.dlin = ''; } save(); return; }
+  if (e.target.id === 'root'){ S.korzen = e.target.value; save(); render(); }
+  if (e.target.id === 'bkin' && e.target.files[0]){
+    const f = e.target.files[0];
+    try {
+      if (/\.xlsx$/i.test(f.name)) applyImport(await importXlsx(f), 'Arkusz ' + f.name);
+      else applyImport(parseJsonText(await f.text()), 'Plik ' + f.name);
+    } catch(err){ toast('Nie udało się wczytać: ' + err.message); }
+    e.target.value = '';
+  }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+
+load(); route();
+</script>
